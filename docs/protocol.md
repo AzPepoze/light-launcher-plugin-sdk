@@ -46,7 +46,7 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 | `source.search` | `source`, `url?`, `query?`, `page?` | `games[]` |
 | `source.fetchGame` | `source`, `ref` | `game` |
 | `source.resolveFiles` | `source`, `game` | `files[]` |
-| `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers` |
+| `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers`, `filename?`, `size?` |
 | `source.checkUpdate` | `source`, `game` | `update` or `null` |
 | `source.sync` | `source` | `games[]` or `SyncStatus` (see below) |
 | `source.authStatus` | `source` | `AuthState` |
@@ -151,7 +151,7 @@ The launcher checks the permission in the manifest before it runs a service.
 | `extract` | `fs` | `archive`, `destination` | `destination` |
 | `library.upsert` | none | `games[]` | `upserted` |
 | `settings.get` | none | none | `settings` |
-| `browser.assist` | `browser` | `url`, `timeoutMs?` | `capturedUrl`, `filename?`, `size?` |
+| `browser.assist` | `browser` | `url`, `timeoutMs?`, `token?` | `capturedUrl`, `filename?`, `size?`, `headers?` |
 
 > [!NOTE]
 > `http.request` does the rate limit, the retries and the ETag cache for the plugin.
@@ -164,11 +164,24 @@ The launcher opens the system browser at `url` and waits for a download link.
 |---|---|---|
 | `url` | param | The page to open |
 | `timeoutMs` | param, optional | How long to wait |
+| `token` | param, optional | A string the launcher echoes in `browser.waiting` and `browser.progress` |
 | `capturedUrl` | result | The download link, or `null` when nothing was caught |
 | `filename` | result, optional | The file name the browser reported |
 | `size` | result, optional | The file size in bytes |
+| `headers` | result, optional | Headers the download needs, such as `Cookie` |
 
 While the browser is open, the launcher sends `browser.waiting` and `browser.progress`.
+Their `token` is the `token` you sent, or the request id as a string when you sent none.
+Use a `token` when one plugin runs several browser calls at once.
+
+### source.prepareDownload result
+
+| Field | Type | Meaning |
+|---|---|---|
+| `url` | string | The link to download |
+| `headers` | object | Headers the download must send |
+| `filename` | string, optional | The file name, when the plugin knows it |
+| `size` | integer, optional | The size in bytes, when the plugin knows it |
 
 ## Notifications
 
@@ -181,8 +194,6 @@ While the browser is open, the launcher sends `browser.waiting` and `browser.pro
 | `log` | plugin | `level`, `message`, `data?` |
 | `notify` | plugin | `level`, `message` |
 
-> [!NOTE]
-> `token` in the browser notifications is the request id of the `browser.assist` call, as a string.
 
 ## Cancel and timeouts
 

@@ -277,6 +277,45 @@ describe('plugin-defined methods', () => {
   });
 });
 
+describe('browser assist correlation', () => {
+  test('ctx.requestId is the inbound id, and browser.assist sends the token and returns headers', async () => {
+    let inboundId: unknown;
+    const plugin = startPlugin({
+      'source.prepareDownload': async (_params, ctx) => {
+        inboundId = ctx.requestId;
+        const captured = await ctx.host.browser.assist({ url: 'https://page.test', token: 'job-1' });
+        return {
+          url: captured.capturedUrl ?? '',
+          headers: captured.headers ?? {},
+          filename: captured.filename,
+          size: captured.size,
+        };
+      },
+    });
+    plugin.send('{"jsonrpc":"2.0","id":11,"method":"source.prepareDownload","params":{}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    const assist = plugin.outgoing()[0];
+    expect(assist).toMatchObject({ method: 'browser.assist', params: { url: 'https://page.test', token: 'job-1' } });
+
+    plugin.send(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: assist.id,
+        result: { capturedUrl: 'https://cdn.test/a.zip', filename: 'a.zip', size: 10, headers: { Cookie: 'c=1' } },
+      }) + '\n',
+    );
+    await until(() => plugin.outgoing().length === 2);
+    expect(inboundId).toBe(11);
+    expect(plugin.outgoing()[1]).toEqual({
+      jsonrpc: '2.0',
+      id: 11,
+      result: { url: 'https://cdn.test/a.zip', headers: { Cookie: 'c=1' }, filename: 'a.zip', size: 10 },
+    });
+    plugin.end();
+    await plugin.done;
+  });
+});
+
 describe('browser assist notifications', () => {
   test('the host can send browser progress and waiting notifications to the plugin', async () => {
     const seen: unknown[] = [];

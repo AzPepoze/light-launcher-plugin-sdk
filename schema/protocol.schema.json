@@ -344,7 +344,9 @@
         "required": ["url", "headers"],
         "properties": {
           "url": { "type": "string" },
-          "headers": { "$ref": "#/$defs/headers" }
+          "headers": { "$ref": "#/$defs/headers" },
+          "filename": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 }
         },
         "additionalProperties": false
       }
@@ -630,7 +632,8 @@
         "required": ["url"],
         "properties": {
           "url": { "type": "string" },
-          "timeoutMs": { "type": "integer", "minimum": 1 }
+          "timeoutMs": { "type": "integer", "minimum": 1 },
+          "token": { "type": "string", "description": "Echoed in browser.progress and browser.waiting. Defaults to the request id." }
         },
         "additionalProperties": false
       },
@@ -640,7 +643,8 @@
         "properties": {
           "capturedUrl": { "type": ["string", "null"], "description": "The download link, or null when nothing was captured." },
           "filename": { "type": "string" },
-          "size": { "type": "integer", "minimum": 0 }
+          "size": { "type": "integer", "minimum": 0 },
+          "headers": { "$ref": "#/$defs/headers", "description": "Headers the download needs, such as Cookie." }
         },
         "additionalProperties": false
       }
@@ -661,12 +665,12 @@
 
     "browser.progress": {
       "direction": "host-to-plugin",
-      "description": "Progress of the browser.assist call whose request id is token.",
+      "description": "Progress of the browser.assist call that has this token.",
       "params": {
         "type": "object",
         "required": ["token", "percent"],
         "properties": {
-          "token": { "type": "string", "description": "The browser.assist request id, as a string." },
+          "token": { "type": "string", "description": "The token the plugin sent to browser.assist, or its request id as a string." },
           "percent": { "type": "number", "minimum": 0, "maximum": 100 },
           "message": { "type": "string" }
         },
@@ -681,7 +685,7 @@
         "type": "object",
         "required": ["token", "message"],
         "properties": {
-          "token": { "type": "string", "description": "The browser.assist request id, as a string." },
+          "token": { "type": "string", "description": "The token the plugin sent to browser.assist, or its request id as a string." },
           "message": { "type": "string" }
         },
         "additionalProperties": false

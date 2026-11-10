@@ -23,6 +23,8 @@ export const SHUTDOWN_GRACE_MS = 2000;
 /** Given to every incoming request handler. */
 export interface CallContext {
   id: RequestId;
+  /** the id of this inbound request, the same as id */
+  requestId: RequestId;
   /** aborted when the host sends cancel for this request */
   signal: AbortSignal;
   progress(report: ProgressReport): void;
@@ -164,6 +166,7 @@ export class RpcPeer {
     const controller = new AbortController();
     const ctx: CallContext = {
       id: request.id,
+      requestId: request.id,
       signal: controller.signal,
       progress: (report) => this.notify('progress', { id: request.id, ...report }),
     };

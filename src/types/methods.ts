@@ -71,6 +71,10 @@ export interface PrepareDownloadParams {
 export interface PrepareDownloadResult {
   url: string;
   headers: Record<string, string>;
+  /** the file name, when the plugin knows it */
+  filename?: string;
+  /** the size in bytes, when the plugin knows it */
+  size?: number;
 }
 
 export interface CheckUpdateParams {
@@ -228,6 +232,8 @@ export interface SettingsGetResult {
 export interface BrowserAssistParams {
   url: string;
   timeoutMs?: number;
+  /** echoed in browser.progress and browser.waiting, so the plugin can match them to this call */
+  token?: string;
 }
 
 export interface BrowserAssistResult {
@@ -235,6 +241,8 @@ export interface BrowserAssistResult {
   capturedUrl: string | null;
   filename?: string;
   size?: number;
+  /** headers the download needs, such as Cookie */
+  headers?: Record<string, string>;
 }
 
 export interface PluginMethods {
@@ -279,7 +287,10 @@ export interface NotifyParams {
   message: string;
 }
 
-/** Sent by the launcher while a browser.assist call is open. token is that call's request id as a string. */
+/**
+ * Sent by the launcher while a browser.assist call is open. token is the token the plugin
+ * sent with that call, or its request id as a string when it sent none.
+ */
 export interface BrowserProgressParams {
   token: string;
   percent: number;
