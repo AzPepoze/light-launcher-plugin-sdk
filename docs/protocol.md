@@ -172,7 +172,8 @@ The launcher opens the system browser at `url` and waits for a download link.
 
 While the browser is open, the launcher sends `browser.waiting` and `browser.progress`.
 Their `token` is the `token` you sent, or the request id as a string when you sent none.
-Use a `token` when one plugin runs several browser calls at once.
+Use a `token` when one plugin runs several browser calls at once. In a handler, `ctx.requestId`
+is the id of the request being answered, so you can use it as the token.
 
 ### source.prepareDownload result
 
