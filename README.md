@@ -5,13 +5,14 @@ talks to it over text messages, and stops it if it crashes.
 
 ## What is in this repo
 
-| Part | Folder | What it gives you |
+| Part | Import | What it gives you |
 |---|---|---|
 | Schemas | `schema/` | The rules for `plugin.json` and for the messages |
-| Types | `src/types/` | TypeScript types that match the schemas |
-| Runtime | `src/runtime/` | Reads and writes messages, and calls launcher services |
-| Helpers | `src/helpers/` | Version compare, title match, link parsing, HTML and HTTP helpers |
-| CLI | `src/cli/llp.ts` | Creates, checks and packs plugins |
+| Types | `@light-launcher/plugin-sdk/types` | TypeScript types that match the schemas |
+| Runtime | `@light-launcher/plugin-sdk/runtime` | `servePlugin`, `sourceHandlers` and the `SourceProvider` contract |
+| Helpers | `@light-launcher/plugin-sdk/helpers` | Version compare, title match, link parsing, HTML and HTTP helpers |
+| Manifest check | `@light-launcher/plugin-sdk/manifest` | `manifestProblems`, the same check as `llp validate` |
+| CLI | `src/cli/llp.ts` | Creates, checks, tests and packs plugins |
 
 ## Quick start
 
@@ -42,12 +43,17 @@ Bun can link a local folder into any project. Do it in two steps:
 The template's `package.json` already says `"link:@light-launcher/plugin-sdk"`, so a
 new plugin only needs step 2. If you move the SDK folder, run step 1 again.
 
+> [!IMPORTANT]
+> After you change the SDK, run `bun install` in each plugin folder that uses it.
+> Bun copies a `file:` dependency into `node_modules`, so the plugin keeps the old copy
+> until you install again.
+
 ## More
 
 | Topic | Read it when you want to |
 |---|---|
 | [Writing a plugin](docs/writing-a-plugin.md) | Build your first plugin step by step |
-| [Manifest](docs/manifest.md) | Know every field in `plugin.json` |
+| [Manifest](docs/manifest.md) | Know every field in `plugin.json`, including folder names |
 | [Protocol](docs/protocol.md) | Know every message the launcher and plugin send |
 
 ## Commands
