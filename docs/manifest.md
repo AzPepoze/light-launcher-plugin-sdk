@@ -52,11 +52,20 @@ Source capabilities:
 
 | Capability | The launcher may call |
 |---|---|
-| `browse` | `source.search` |
-| `auth` | Reserved. No protocol method yet |
+| `browse` | `source.search`, `source.fetchGame` |
+| `auth` | `source.authStatus`, `source.setCredential`, `source.clearCredential` |
 | `updateCheck` | `source.checkUpdate` |
 | `resolveFiles` | `source.resolveFiles`, `source.prepareDownload` |
-| `sync` | `source.sync` |
+| `sync:games` | `source.sync`, which returns an array of games |
+| `sync:index` | `source.sync`, which returns a status object: `count`, `syncedAt`, `running` |
+
+> [!IMPORTANT]
+> Declare `sync:games` or `sync:index`, never both. The two names tell the launcher what
+> `source.sync` returns. See [Protocol](protocol.md#sourcesync-result).
+
+```json
+"sources": [{ "id": "demo", "label": "Demo", "capabilities": ["browse", "auth", "sync:index"] }]
+```
 
 ## permissions
 

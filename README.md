@@ -16,14 +16,31 @@ talks to it over text messages, and stops it if it crashes.
 ## Quick start
 
 > [!NOTE]
-> The SDK is not on npm yet. Use it from a local checkout.
+> The SDK is not on npm yet. Link it from a local checkout, as shown below.
 
 ```bash
+# in the SDK folder
 bun install
+bun link
+
+# in the SDK folder, makes ./my-plugin
 bun src/cli/llp.ts init my-plugin
 cd my-plugin
-bun src/cli/llp.ts validate
+bun link @light-launcher/plugin-sdk
+bun ../src/cli/llp.ts validate
 ```
+
+## Use the SDK before it is published
+
+Bun can link a local folder into any project. Do it in two steps:
+
+| Step | Run it in | Command |
+|---|---|---|
+| 1. Register the SDK | the SDK folder | `bun link` |
+| 2. Use the SDK | your plugin folder | `bun link @light-launcher/plugin-sdk` |
+
+The template's `package.json` already says `"link:@light-launcher/plugin-sdk"`, so a
+new plugin only needs step 2. If you move the SDK folder, run step 1 again.
 
 ## More
 
@@ -38,4 +55,5 @@ bun src/cli/llp.ts validate
 ```bash
 bun test               # run the tests
 bun run typecheck      # check the types
+bun src/cli/llp.ts test <dir>   # start a plugin and check the protocol
 ```

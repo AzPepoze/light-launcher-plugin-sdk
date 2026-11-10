@@ -106,8 +106,41 @@ Add an entry to `plugin.json` only after its file exists. `llp pack` fails for a
 
 ```bash
 bun src/cli/llp.ts validate
+bun src/cli/llp.ts test
 bun src/cli/llp.ts pack --out dist
 ```
+
+| Command | What it checks |
+|---|---|
+| `validate` | `plugin.json` matches the schema |
+| `test` | The binary starts, answers `initialize`, answers `source.parseRef`, and exits within 2 s after `shutdown` |
+| `pack` | Declared files exist. Then it writes the package |
+
+> [!TIP]
+> `test` runs the entry for your own OS and CPU. Build that binary first.
+
+## 7. Keep credentials out of the launcher
+
+If your source needs a cookie or an API key, let the user type it in the launcher.
+The launcher calls `source.setCredential` with the value. Your plugin checks it, then stores it:
+
+```ts
+'source.setCredential': async (params, ctx) => {
+  const ok = await checkKey(params.value);
+  if (!ok) return { status: 'invalid', message: 'The key was rejected' };
+  await ctx.host.secrets.set('apiKey', params.value);
+  return { status: 'ok' };
+},
+```
+
+Read the secret later with `ctx.host.secrets.get('apiKey')`. Remove it with
+`ctx.host.secrets.delete('apiKey')`, which runs when the user clears the credential.
+
+> [!WARNING]
+> The launcher never sends a credential in `initialize`. Your plugin must ask for it with
+> `secrets.get`. The manifest needs `"secrets": true` for this.
+
+## Next
 
 `pack` writes `dist/demo-site-0.1.0.llplugin`. The file is a zip. It holds your manifest,
 the binaries, the UI files and a `SHA256SUMS` file with a checksum for each file.

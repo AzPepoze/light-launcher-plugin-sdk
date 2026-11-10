@@ -24,7 +24,7 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 |---|---|
 | Launcher to plugin | `initialize`, `shutdown`, `source.*` |
 | Plugin to launcher | `http.request`, `secrets.*`, `storage.*`, `downloads.enqueue`, `extract`, `library.upsert`, `settings.get`, `browser.assist` |
-| Either way (notifications) | `cancel`, `progress`, `log`, `notify` |
+| Either way (notifications) | `cancel`, `progress`, `log`, `notify`, `browser.progress`, `browser.waiting` |
 
 ## Lifecycle
 
@@ -32,18 +32,72 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 2. The launcher sends `source.*` requests as the user works.
 3. The launcher sends `shutdown`. The plugin answers, then exits.
 
+> [!IMPORTANT]
+> The launcher never sends a credential in `initialize`. The plugin reads and saves its
+> own secrets with `secrets.get`, `secrets.set` and `secrets.delete`.
+
 ## Launcher methods
 
 | Method | Params | Result |
 |---|---|---|
-| `initialize` | `hostVersion`, `apiVersion`, `platform`, `grantedPermissions` | `pluginVersion`, `capabilities` |
+| `initialize` | `hostVersion`, `apiVersion`, `platform`, `grantedPermissions`, `dataDir` | `pluginVersion`, `capabilities` |
 | `shutdown` | none | `null` |
 | `source.search` | `source`, `url?`, `query?`, `page?` | `games[]` |
 | `source.fetchGame` | `source`, `ref` | `game` |
 | `source.resolveFiles` | `source`, `game` | `files[]` |
 | `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers` |
 | `source.checkUpdate` | `source`, `game` | `update` or `null` |
-| `source.sync` | `source` | `games[]` |
+| `source.sync` | `source` | `games[]` or `SyncStatus` (see below) |
+| `source.authStatus` | `source` | `AuthState` |
+| `source.setCredential` | `source`, `value` | `AuthState` |
+| `source.clearCredential` | `source` | `AuthState` |
+| `source.parseRef` | `url` | `Ref` or `null` |
+
+### initialize
+
+| Field | Type | What it is |
+|---|---|---|
+| `hostVersion` | string | The launcher version |
+| `apiVersion` | string | The protocol major version |
+| `platform` | string | `windows`, `linux`, `mac`, `android` or `unknown` |
+| `grantedPermissions` | object | The permissions the user allowed |
+| `dataDir` | string | A private folder for this plugin. Put caches and indexes here |
+
+### source.sync result
+
+`source.sync` returns one of two shapes. The `syncMode` is set by the source's
+`sync:games` or `sync:index` capability in `plugin.json`. See [Manifest](manifest.md).
+
+| Capability | Result |
+|---|---|
+| `sync:games` | An array of games: `GameDTO[]` |
+| `sync:index` | A status object: `{ count, syncedAt, running }` |
+
+```json
+{"count": 1250, "syncedAt": "2026-11-10T08:00:00Z", "running": false}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `count` | integer | How many entries the index holds |
+| `syncedAt` | string or null | When the last sync finished |
+| `running` | boolean | `true` while a sync is still running |
+
+### Credentials
+
+| Method | Result | What the plugin does |
+|---|---|---|
+| `source.setCredential` | `AuthState` | Checks the value, then calls `secrets.set` when it works |
+| `source.authStatus` | `AuthState` | Reads the secret with `secrets.get` and checks it |
+| `source.clearCredential` | `AuthState` | Calls `secrets.delete` |
+
+`AuthState` has `status` (`unconfigured`, `ok`, `expired`, `invalid` or `error`), and
+optional `user`, `message` and `checkedAt`.
+
+### parseRef
+
+`source.parseRef` takes a URL and returns the `Ref` for it (`kind`, `id`, `url`), or `null`
+when the URL is not one the source knows.
 
 ## Plugin services
 
@@ -54,25 +108,45 @@ The launcher checks the permission in the manifest before it runs a service.
 | `http.request` | `network` host | `url`, `method?`, `headers?`, `body?`, `timeoutMs?`, `retries?`, `cacheKey?`, `maxBytes?`, `allowStatus?` | `status`, `url`, `text`, `headers`, `notModified` |
 | `secrets.get` | `secrets` | `key` | `value` or `null` |
 | `secrets.set` | `secrets` | `key`, `value` | `null` |
+| `secrets.delete` | `secrets` | `key` | `null` |
 | `storage.get` | none | `key` | `value` |
 | `storage.set` | none | `key`, `value` | `null` |
 | `downloads.enqueue` | none | `url`, `filename`, `title?`, `size?`, `headers?` | `id` |
 | `extract` | `fs` | `archive`, `destination` | `destination` |
 | `library.upsert` | none | `games[]` | `upserted` |
 | `settings.get` | none | none | `settings` |
-| `browser.assist` | `browser` | `url`, `message?`, `timeoutMs?` | `capturedUrl` or `null` |
+| `browser.assist` | `browser` | `url`, `timeoutMs?` | `capturedUrl`, `filename?`, `size?` |
 
 > [!NOTE]
 > `http.request` does the rate limit, the retries and the ETag cache for the plugin.
+
+### browser.assist
+
+The launcher opens the system browser at `url` and waits for a download link.
+
+| Field | Params or result | Meaning |
+|---|---|---|
+| `url` | param | The page to open |
+| `timeoutMs` | param, optional | How long to wait |
+| `capturedUrl` | result | The download link, or `null` when nothing was caught |
+| `filename` | result, optional | The file name the browser reported |
+| `size` | result, optional | The file size in bytes |
+
+While the browser is open, the launcher sends `browser.waiting` and `browser.progress`.
 
 ## Notifications
 
 | Notification | Sent by | Params |
 |---|---|---|
 | `cancel` | launcher | `id`: the request to stop |
+| `browser.progress` | launcher | `token`, `percent` (0 to 100), `message?` |
+| `browser.waiting` | launcher | `token`, `message`: the user must act, such as press a download button |
 | `progress` | plugin | `id`, `done?`, `total?`, `message?` |
 | `log` | plugin | `level`, `message`, `data?` |
 | `notify` | plugin | `level`, `message` |
+
+> [!NOTE]
+> `token` in the browser notifications is the request id of the `browser.assist` call, as a string.
 
 ## Cancel and timeouts
 
