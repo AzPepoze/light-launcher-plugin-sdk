@@ -1,0 +1,629 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://light-launcher.dev/schema/protocol.schema.json",
+  "title": "Light Launcher plugin protocol",
+  "description": "JSON-RPC 2.0 messages, one JSON object per line over the plugin's stdin and stdout. Each method entry gives its direction, params and result.",
+  "$defs": {
+    "requestId": {
+      "type": ["string", "number"]
+    },
+
+    "rpcError": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "integer" },
+        "message": { "type": "string" },
+        "data": {}
+      }
+    },
+
+    "request": {
+      "type": "object",
+      "required": ["jsonrpc", "id", "method"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "$ref": "#/$defs/requestId" },
+        "method": { "type": "string" },
+        "params": { "type": ["object", "array"] }
+      },
+      "additionalProperties": false
+    },
+
+    "response": {
+      "type": "object",
+      "required": ["jsonrpc", "id"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "$ref": "#/$defs/requestId" },
+        "result": {},
+        "error": { "$ref": "#/$defs/rpcError" }
+      },
+      "oneOf": [{ "required": ["result"] }, { "required": ["error"] }],
+      "additionalProperties": false
+    },
+
+    "notification": {
+      "type": "object",
+      "required": ["jsonrpc", "method"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "method": { "type": "string" },
+        "params": { "type": ["object", "array"] }
+      },
+      "additionalProperties": false
+    },
+
+    "errorCodes": {
+      "description": "Standard JSON-RPC codes plus Light Launcher codes in the -32000 range.",
+      "enum": [-32700, -32600, -32601, -32602, -32603, -32001, -32002, -32003, -32004, -32005, -32006]
+    },
+
+    "platform": {
+      "type": "string",
+      "enum": ["windows", "linux", "mac", "android", "unknown"]
+    },
+
+    "permissions": {
+      "type": "object",
+      "required": ["network", "fs", "secrets", "browser", "exec"],
+      "properties": {
+        "network": { "type": "array", "items": { "type": "string" } },
+        "fs": { "type": "array", "items": { "type": "string" } },
+        "secrets": { "type": "boolean" },
+        "browser": { "type": "boolean" },
+        "exec": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "gameStatus": {
+      "type": "string",
+      "enum": ["ongoing", "completed", "abandoned", "onhold", "unknown"]
+    },
+
+    "fileKind": {
+      "type": "string",
+      "enum": ["mirror", "attachment", "direct", "external"]
+    },
+
+    "authKind": {
+      "type": "string",
+      "enum": ["none", "cookie", "apikey"]
+    },
+
+    "authStatus": {
+      "type": "string",
+      "enum": ["unconfigured", "ok", "expired", "invalid", "error"]
+    },
+
+    "authState": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "$ref": "#/$defs/authStatus" },
+        "user": { "type": ["string", "null"] },
+        "message": { "type": ["string", "null"] },
+        "checkedAt": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+
+    "providerCapabilities": {
+      "type": "object",
+      "required": ["browse", "auth", "updateCheck", "resolveFiles", "versioned"],
+      "properties": {
+        "browse": { "type": "boolean" },
+        "auth": { "$ref": "#/$defs/authKind" },
+        "updateCheck": { "type": "boolean" },
+        "resolveFiles": { "type": "boolean" },
+        "versioned": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "gameDTO": {
+      "type": "object",
+      "description": "A game as a source reports it. No database ids.",
+      "required": ["source", "sourceId", "url", "title"],
+      "properties": {
+        "source": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "developer": { "type": ["string", "null"] },
+        "engine": { "type": ["string", "null"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "coverUrl": { "type": ["string", "null"] },
+        "screenshots": { "type": "array", "items": { "type": "string" } },
+        "descriptionHtml": { "type": ["string", "null"] },
+        "changelog": { "type": ["string", "null"] },
+        "rating": { "type": ["number", "null"] },
+        "status": { "$ref": "#/$defs/gameStatus" },
+        "updatedAt": { "type": ["string", "null"] },
+        "extra": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "gameRef": {
+      "type": "object",
+      "description": "The minimal game shape the host sends back to a plugin.",
+      "required": ["source", "sourceId", "url", "title"],
+      "properties": {
+        "source": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "updatedAt": { "type": ["string", "null"] },
+        "extra": { "type": ["object", "null"] }
+      },
+      "additionalProperties": false
+    },
+
+    "ref": {
+      "type": "object",
+      "required": ["kind", "id", "url"],
+      "properties": {
+        "kind": { "enum": ["game", "listing"] },
+        "id": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "fileCandidate": {
+      "type": "object",
+      "required": ["id", "label", "url", "kind"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "url": { "type": "string" },
+        "filename": { "type": ["string", "null"] },
+        "size": { "type": ["integer", "null"], "minimum": 0 },
+        "host": { "type": ["string", "null"] },
+        "kind": { "$ref": "#/$defs/fileKind" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "requiresAuth": { "type": "boolean" },
+        "rangeHint": { "type": ["boolean", "null"] },
+        "headers": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+
+    "updateInfo": {
+      "type": "object",
+      "properties": {
+        "version": { "type": ["string", "null"] },
+        "updatedAt": { "type": ["string", "null"] },
+        "changelog": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+
+    "headers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+
+  "methods": {
+    "initialize": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["hostVersion", "apiVersion", "platform", "grantedPermissions"],
+        "properties": {
+          "hostVersion": { "type": "string" },
+          "apiVersion": { "type": "string" },
+          "platform": { "$ref": "#/$defs/platform" },
+          "grantedPermissions": { "$ref": "#/$defs/permissions" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["pluginVersion", "capabilities"],
+        "properties": {
+          "pluginVersion": { "type": "string" },
+          "capabilities": {
+            "type": "object",
+            "description": "Keyed by source id.",
+            "additionalProperties": { "$ref": "#/$defs/providerCapabilities" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "shutdown": {
+      "direction": "host-to-plugin",
+      "params": { "type": "object", "additionalProperties": false },
+      "result": { "type": "null" }
+    },
+
+    "source.search": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source"],
+        "properties": {
+          "source": { "type": "string" },
+          "url": { "type": "string" },
+          "query": { "type": "string" },
+          "page": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["games"],
+        "properties": { "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } } },
+        "additionalProperties": false
+      }
+    },
+
+    "source.fetchGame": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source", "ref"],
+        "properties": {
+          "source": { "type": "string" },
+          "ref": { "$ref": "#/$defs/ref" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["game"],
+        "properties": { "game": { "$ref": "#/$defs/gameDTO" } },
+        "additionalProperties": false
+      }
+    },
+
+    "source.resolveFiles": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source", "game"],
+        "properties": {
+          "source": { "type": "string" },
+          "game": { "$ref": "#/$defs/gameRef" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["files"],
+        "properties": {
+          "files": { "type": "array", "items": { "$ref": "#/$defs/fileCandidate" } }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "source.prepareDownload": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source", "file", "game"],
+        "properties": {
+          "source": { "type": "string" },
+          "file": { "$ref": "#/$defs/fileCandidate" },
+          "game": { "$ref": "#/$defs/gameRef" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["url", "headers"],
+        "properties": {
+          "url": { "type": "string" },
+          "headers": { "$ref": "#/$defs/headers" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "source.checkUpdate": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source", "game"],
+        "properties": {
+          "source": { "type": "string" },
+          "game": { "$ref": "#/$defs/gameRef" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["update"],
+        "properties": {
+          "update": { "oneOf": [{ "$ref": "#/$defs/updateInfo" }, { "type": "null" }] }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "source.sync": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source"],
+        "properties": { "source": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["games"],
+        "properties": { "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } } },
+        "additionalProperties": false
+      }
+    },
+
+    "http.request": {
+      "direction": "plugin-to-host",
+      "description": "Host applies the network allow-list, rate limit, retry and ETag cache.",
+      "params": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string" },
+          "method": { "enum": ["GET", "HEAD", "POST"] },
+          "headers": { "$ref": "#/$defs/headers" },
+          "body": { "type": "string" },
+          "timeoutMs": { "type": "integer", "minimum": 1 },
+          "retries": { "type": "integer", "minimum": 0 },
+          "cacheKey": { "type": "string" },
+          "maxBytes": { "type": "integer", "minimum": 1 },
+          "allowStatus": { "type": "array", "items": { "type": "integer" } }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["status", "url", "text", "headers", "notModified"],
+        "properties": {
+          "status": { "type": "integer" },
+          "url": { "type": "string" },
+          "text": { "type": "string" },
+          "headers": { "$ref": "#/$defs/headers" },
+          "notModified": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "secrets.get": {
+      "direction": "plugin-to-host",
+      "permission": "secrets",
+      "params": {
+        "type": "object",
+        "required": ["key"],
+        "properties": { "key": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["value"],
+        "properties": { "value": { "type": ["string", "null"] } },
+        "additionalProperties": false
+      }
+    },
+
+    "secrets.set": {
+      "direction": "plugin-to-host",
+      "permission": "secrets",
+      "params": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "result": { "type": "null" }
+    },
+
+    "storage.get": {
+      "direction": "plugin-to-host",
+      "description": "Per-plugin key/value store.",
+      "params": {
+        "type": "object",
+        "required": ["key"],
+        "properties": { "key": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["value"],
+        "properties": { "value": {} },
+        "additionalProperties": false
+      }
+    },
+
+    "storage.set": {
+      "direction": "plugin-to-host",
+      "description": "Per-plugin key/value store.",
+      "params": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": {}
+        },
+        "additionalProperties": false
+      },
+      "result": { "type": "null" }
+    },
+
+    "downloads.enqueue": {
+      "direction": "plugin-to-host",
+      "params": {
+        "type": "object",
+        "required": ["url", "filename"],
+        "properties": {
+          "url": { "type": "string" },
+          "filename": { "type": "string" },
+          "title": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "headers": { "$ref": "#/$defs/headers" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } },
+        "additionalProperties": false
+      }
+    },
+
+    "extract": {
+      "direction": "plugin-to-host",
+      "permission": "fs",
+      "params": {
+        "type": "object",
+        "required": ["archive", "destination"],
+        "properties": {
+          "archive": { "type": "string" },
+          "destination": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["destination"],
+        "properties": { "destination": { "type": "string" } },
+        "additionalProperties": false
+      }
+    },
+
+    "library.upsert": {
+      "direction": "plugin-to-host",
+      "params": {
+        "type": "object",
+        "required": ["games"],
+        "properties": {
+          "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["upserted"],
+        "properties": { "upserted": { "type": "integer", "minimum": 0 } },
+        "additionalProperties": false
+      }
+    },
+
+    "settings.get": {
+      "direction": "plugin-to-host",
+      "description": "Returns the plugin's settings object, validated against its settings schema.",
+      "params": { "type": "object", "additionalProperties": false },
+      "result": {
+        "type": "object",
+        "required": ["settings"],
+        "properties": { "settings": { "type": "object" } },
+        "additionalProperties": false
+      }
+    },
+
+    "browser.assist": {
+      "direction": "plugin-to-host",
+      "permission": "browser",
+      "description": "Opens the system browser and waits for a download link to be captured.",
+      "params": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string" },
+          "message": { "type": "string" },
+          "timeoutMs": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["capturedUrl"],
+        "properties": { "capturedUrl": { "type": ["string", "null"] } },
+        "additionalProperties": false
+      }
+    }
+  },
+
+  "notifications": {
+    "cancel": {
+      "direction": "host-to-plugin",
+      "description": "Asks the plugin to stop the request with this id. The plugin still answers with error -32002.",
+      "params": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "$ref": "#/$defs/requestId" } },
+        "additionalProperties": false
+      }
+    },
+
+    "progress": {
+      "direction": "plugin-to-host",
+      "description": "Progress for the host request with this id.",
+      "params": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "$ref": "#/$defs/requestId" },
+          "done": { "type": "number", "minimum": 0 },
+          "total": { "type": ["number", "null"], "minimum": 0 },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "log": {
+      "direction": "plugin-to-host",
+      "params": {
+        "type": "object",
+        "required": ["level", "message"],
+        "properties": {
+          "level": { "enum": ["debug", "info", "warn", "error"] },
+          "message": { "type": "string" },
+          "data": {}
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "notify": {
+      "direction": "plugin-to-host",
+      "params": {
+        "type": "object",
+        "required": ["level", "message"],
+        "properties": {
+          "level": { "enum": ["info", "warn", "error", "success"] },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+
+  "errors": {
+    "-32700": "Parse error: the line is not JSON.",
+    "-32600": "Invalid request: not a JSON-RPC 2.0 message.",
+    "-32601": "Method not found.",
+    "-32602": "Invalid params: fails the method's params schema.",
+    "-32603": "Internal error.",
+    "-32001": "Permission denied: the manifest does not grant this service or host.",
+    "-32002": "Request canceled.",
+    "-32003": "Request timed out.",
+    "-32004": "Rate limited by the remote site.",
+    "-32005": "Remote site returned an error the plugin did not allow.",
+    "-32006": "Not modified: the source answered 304 and the caller should keep its old data."
+  }
+}
