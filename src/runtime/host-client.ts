@@ -68,7 +68,7 @@ export function createHostClient(transport: HostTransport): HostClient {
       request: (params, options) => call('http.request', params, options),
     },
     secrets: {
-      get: async (key) => (await call('secrets.get', { key })).value,
+      get: async (key) => (await call('secrets.get', { key }))?.value ?? null,
       set: async (key, value) => {
         await call('secrets.set', { key, value });
       },
@@ -77,7 +77,7 @@ export function createHostClient(transport: HostTransport): HostClient {
       },
     },
     storage: {
-      get: async (key) => (await call('storage.get', { key })).value,
+      get: async (key) => (await call('storage.get', { key }))?.value ?? null,
       set: async (key, value) => {
         await call('storage.set', { key, value });
       },

@@ -168,6 +168,24 @@ describe('secrets round trip', () => {
     plugin.end();
     await plugin.done;
   });
+
+  test('a host that answers null for a missing secret gives the plugin null, not a crash', async () => {
+    const plugin = startPlugin({
+      'source.authStatus': async (_params, ctx) => {
+        const value = await ctx.host.secrets.get('credential');
+        return { status: value === null ? 'unconfigured' : 'ok' };
+      },
+    });
+
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.authStatus","params":{"source":"x"}}\n');
+    await until(() => plugin.outgoing().length > 0);
+    const read = plugin.outgoing()[0];
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: read.id, result: null }) + '\n');
+    await until(() => plugin.outgoing().length > 1);
+    expect(plugin.outgoing()[1]).toEqual({ jsonrpc: '2.0', id: 1, result: { status: 'unconfigured' } });
+    plugin.end();
+    await plugin.done;
+  });
 });
 
 describe('param validation', () => {
