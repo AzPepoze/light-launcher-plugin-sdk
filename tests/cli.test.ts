@@ -72,6 +72,14 @@ describe('manifest validation', () => {
     expect(manifestProblems(bad).length).toBeGreaterThan(0);
   });
 
+  test('fs accepts the known folder names and app data names, and refuses other names', () => {
+    const withFs = (fs: string[]) => ({ ...validManifest(), permissions: { fs } });
+    expect(manifestProblems(withFs(['$GAMES', '$DOWNLOADS', '$DATA', '$APPDATA_ITCH']))).toEqual([]);
+    expect(manifestProblems(withFs(['$ITCH_APP_DATA']))).not.toEqual([]);
+    expect(manifestProblems(withFs(['$APPDATA_itch']))).not.toEqual([]);
+    expect(manifestProblems(withFs(['$HOME']))).not.toEqual([]);
+  });
+
   test('a command may name the plugin method that runs it', () => {
     const manifest = validManifest();
     manifest.contributes.commands = [{ id: 'import-key', label: 'Import key', method: 'demo-site.importKey' }];

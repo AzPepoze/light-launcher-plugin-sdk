@@ -48,11 +48,14 @@ export interface Contributes {
   themes?: ThemeContribution[];
 }
 
+/** A folder the host maps: $GAMES, $DOWNLOADS, $DATA, or $APPDATA_<NAME>. */
+export type FsName = '$GAMES' | '$DOWNLOADS' | '$DATA' | `$APPDATA_${string}`;
+
 export interface PluginPermissions {
   /** host names, or *.host to allow subdomains */
   network?: string[];
   /** named folders the host grants, such as $GAMES */
-  fs?: string[];
+  fs?: FsName[];
   secrets?: boolean;
   browser?: boolean;
   exec?: boolean;

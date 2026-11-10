@@ -64,12 +64,20 @@
       "enum": ["windows", "linux", "mac", "android", "unknown"]
     },
 
+    "fsName": {
+      "description": "A folder the host grants. The host maps only these names: $GAMES, $DOWNLOADS, $DATA, and $APPDATA_<NAME> for an app's data folder.",
+      "anyOf": [
+        { "enum": ["$GAMES", "$DOWNLOADS", "$DATA"] },
+        { "type": "string", "pattern": "^\\$APPDATA_[A-Z][A-Z0-9_]*$" }
+      ]
+    },
+
     "permissions": {
       "type": "object",
       "required": ["network", "fs", "secrets", "browser", "exec"],
       "properties": {
         "network": { "type": "array", "items": { "type": "string" } },
-        "fs": { "type": "array", "items": { "type": "string" } },
+        "fs": { "type": "array", "items": { "$ref": "#/$defs/fsName" } },
         "secrets": { "type": "boolean" },
         "browser": { "type": "boolean" },
         "exec": { "type": "boolean" }

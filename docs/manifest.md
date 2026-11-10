@@ -89,10 +89,23 @@ Source capabilities:
 | Field | Type | What it allows |
 |---|---|---|
 | `network` | list of hosts | Requests to these hosts. Use `*.example.com` for subdomains |
-| `fs` | list of folder names | Access to named folders such as `$GAMES` or `$DOWNLOADS` |
+| `fs` | list of folder names | Access to named folders. See the table below |
 | `secrets` | yes or no | Store and read secrets in the system keyring |
 | `browser` | yes or no | Open the browser and capture a download link |
 | `exec` | yes or no | Start other programs |
+
+### fs folder names
+
+| Name | Folder |
+|---|---|
+| `$GAMES` | The games folder |
+| `$DOWNLOADS` | The downloads folder |
+| `$DATA` | The launcher's data folder |
+| `$APPDATA_<NAME>` | The data folder of another app, such as `$APPDATA_ITCH` |
+
+> [!IMPORTANT]
+> The launcher maps only these names. Any other name is refused, so a name such as
+> `$ITCH_APP_DATA` must be written as `$APPDATA_ITCH`.
 
 > [!WARNING]
 > The launcher blocks what goes through its services. A plugin that opens its own sockets

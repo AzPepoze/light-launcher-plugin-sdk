@@ -143,6 +143,13 @@
         "path": { "$ref": "#/$defs/relativePath" }
       }
     },
+    "fsName": {
+      "description": "A folder the host grants. The host maps only these names: $GAMES, $DOWNLOADS, $DATA, and $APPDATA_<NAME> for an app's data folder.",
+      "anyOf": [
+        { "enum": ["$GAMES", "$DOWNLOADS", "$DATA"] },
+        { "type": "string", "pattern": "^\\$APPDATA_[A-Z][A-Z0-9_]*$" }
+      ]
+    },
     "permissions": {
       "type": "object",
       "additionalProperties": false,
@@ -159,11 +166,7 @@
         "fs": {
           "type": "array",
           "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "pattern": "^\\$[A-Z_]+$",
-            "description": "Named folder the host grants, such as $GAMES or $DOWNLOADS."
-          }
+          "items": { "$ref": "#/$defs/fsName" }
         },
         "secrets": { "type": "boolean", "default": false },
         "browser": { "type": "boolean", "default": false },
