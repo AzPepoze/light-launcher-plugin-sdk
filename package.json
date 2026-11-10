@@ -16,6 +16,13 @@
   "bin": {
     "llp": "src/cli/llp.ts"
   },
+  "files": [
+    "src",
+    "schema",
+    "templates",
+    "docs",
+    "README.md"
+  ],
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit"
