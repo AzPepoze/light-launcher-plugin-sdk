@@ -54,6 +54,18 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 | `source.clearCredential` | `source` | `AuthState` |
 | `source.parseRef` | `url` | `Ref` or `null` |
 
+### GameRef
+
+The launcher sends a `GameRef` as `game` in `source.resolveFiles`, `source.prepareDownload`
+and `source.checkUpdate`.
+
+| Field | Type | What it is |
+|---|---|---|
+| `id` | integer, optional | The launcher's own id for the game, when it has one |
+| `source`, `sourceId`, `url`, `title` | string | The game as the source reported it |
+| `version`, `updatedAt` | string or null, optional | The version and date the launcher has |
+| `extra` | object or null, optional | Extra data the source stored |
+
 ### initialize
 
 | Field | Type | What it is |

@@ -205,6 +205,18 @@ describe('param validation', () => {
     await plugin.done;
   });
 
+  test('a game ref may carry a numeric id, and a non-numeric one is refused', async () => {
+    const plugin = startValidated({ 'source.resolveFiles': () => ({ files: [] }) });
+    const game = { source: 'x', sourceId: '1', url: 'u', title: 't' };
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'source.resolveFiles', params: { source: 'x', game: { ...game, id: 7 } } }) + '\n');
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'source.resolveFiles', params: { source: 'x', game: { ...game, id: 'seven' } } }) + '\n');
+    await until(() => plugin.outgoing().length === 2);
+    expect(plugin.outgoing()[0]).toEqual({ jsonrpc: '2.0', id: 1, result: { files: [] } });
+    expect(plugin.outgoing()[1]).toMatchObject({ id: 2, error: { code: ErrorCode.InvalidParams } });
+    plugin.end();
+    await plugin.done;
+  });
+
   test('a missing required field is reported by name', async () => {
     const plugin = startValidated({
       'source.fetchGame': () => ({ game: { source: 'x', sourceId: '1', url: 'u', title: 't' } }),

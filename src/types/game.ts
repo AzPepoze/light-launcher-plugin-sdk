@@ -29,6 +29,8 @@ export interface GameDTO {
 
 /** The minimal game shape the host sends back to a plugin. */
 export interface GameRef {
+  /** the launcher's own id for the game, when it has one */
+  id?: number;
   source: string;
   sourceId: string;
   url: string;

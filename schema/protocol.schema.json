@@ -160,6 +160,7 @@
       "description": "The minimal game shape the host sends back to a plugin.",
       "required": ["source", "sourceId", "url", "title"],
       "properties": {
+        "id": { "type": "integer", "description": "The launcher's own id for the game, when it has one." },
         "source": { "type": "string" },
         "sourceId": { "type": "string" },
         "url": { "type": "string" },
