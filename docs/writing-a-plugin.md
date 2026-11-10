@@ -167,6 +167,35 @@ Read the secret later with `ctx.host.secrets.get('apiKey')`. Remove it with
 > The launcher never sends a credential in `initialize`. Your plugin must ask for it with
 > `secrets.get`. The manifest needs `"secrets": true` for this.
 
+## 8. Use a source provider
+
+A source with search, files and updates has many `source.*` handlers. Put them in one class
+that implements `SourceProvider`, then map it with `sourceHandlers`:
+
+```ts
+import { servePlugin, sourceHandlers, type SourceProvider } from '@light-launcher/plugin-sdk/runtime';
+
+const provider: SourceProvider = createDemoProvider(); // your class
+
+await servePlugin({
+  initialize: () => ({ pluginVersion: '0.1.0', capabilities: { demo: provider.capabilities } }),
+  ...sourceHandlers(provider, 'demo'),
+});
+```
+
+| Part | What it does |
+|---|---|
+| `SourceProvider` | The methods a source implements: `parseRef`, `fetchList`, `fetchGame`, `resolveFiles`, `prepareDownload`, `checkUpdate`, the credential methods, and `sync` |
+| `sourceHandlers(provider, sourceId)` | Returns the `source.*` handlers. A request for another source id gets error `-32602` |
+
+> [!TIP]
+> Pass a function instead of the provider when you build it in `initialize`:
+> `sourceHandlers(() => provider, 'demo')`. The function is called on each request.
+
+> [!NOTE]
+> `sync` is optional. Implement it only for a source that declares `sync:games` or `sync:index`.
+> Without it, `source.sync` answers with error `-32601`.
+
 ## Next
 
 `pack` writes `dist/demo-site-0.1.0.llplugin`. The file is a zip. It holds your manifest,
