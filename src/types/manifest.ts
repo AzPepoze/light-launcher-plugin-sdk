@@ -26,6 +26,11 @@ export interface NamedContribution {
   label: string;
 }
 
+export interface CommandContribution extends NamedContribution {
+  /** plugin method that runs the command, such as demo.importKey */
+  method?: string;
+}
+
 export interface ThemeContribution {
   id: string;
   label: string;
@@ -36,7 +41,7 @@ export interface Contributes {
   sources?: SourceContribution[];
   settings?: { $ref: string };
   pages?: PageContribution[];
-  commands?: NamedContribution[];
+  commands?: CommandContribution[];
   hooks?: PluginHook[];
   launchAdapters?: NamedContribution[];
   importers?: NamedContribution[];

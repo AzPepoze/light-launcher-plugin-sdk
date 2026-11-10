@@ -1,6 +1,12 @@
 import { servePlugin, type PluginHandlers } from '@light-launcher/plugin-sdk';
 
-const handlers: PluginHandlers = {
+// Methods this plugin defines. A command in plugin.json names one of them with "method".
+type PluginMethods = {
+  '__ID__.hello': { params: Record<string, never>; result: { message: string } };
+};
+
+const handlers: PluginHandlers<PluginMethods> = {
+  '__ID__.hello': () => ({ message: 'hello from __ID__' }),
   initialize: () => ({
     pluginVersion: '0.1.0',
     capabilities: {

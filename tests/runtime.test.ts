@@ -170,6 +170,27 @@ describe('secrets round trip', () => {
   });
 });
 
+describe('plugin-defined methods', () => {
+  type ItchMethods = {
+    'itch.importDesktopKey': { params: Record<string, never>; result: { found: boolean } };
+    'itch.checkKey': { params: Record<string, never>; result: { ok: boolean } };
+  };
+
+  test('a handler for a plugin-defined method is served, typed by its entry', async () => {
+    const handlers: PluginHandlers<ItchMethods> = {
+      'itch.importDesktopKey': () => ({ found: true }),
+      // @ts-expect-error the result must match the map entry
+      'itch.checkKey': () => ({ ok: 'yes' }),
+    };
+    const plugin = startPlugin(handlers);
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"itch.importDesktopKey","params":{}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toEqual({ jsonrpc: '2.0', id: 1, result: { found: true } });
+    plugin.end();
+    await plugin.done;
+  });
+});
+
 describe('browser assist notifications', () => {
   test('the host can send browser progress and waiting notifications to the plugin', async () => {
     const seen: unknown[] = [];

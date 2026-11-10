@@ -12,7 +12,18 @@ export type PluginHandler<M extends HostMethodName> = (
   ctx: PluginContext,
 ) => HostMethods[M]['result'] | Promise<HostMethods[M]['result']>;
 
-export type PluginHandlers = { [M in HostMethodName]?: PluginHandler<M> };
+/** A handler for a method the plugin defines, typed by its entry in a `{ params, result }` map. */
+export type CustomHandler<Method> = Method extends { params: infer P; result: infer R }
+  ? (params: P, ctx: PluginContext) => R | Promise<R>
+  : never;
+
+/**
+ * Handlers for the source methods, plus any plugin-defined methods. Pass the map of
+ * plugin methods as the type argument: `PluginHandlers<{ 'my.run': { params: ...; result: ... } }>`.
+ */
+export type PluginHandlers<Custom = Record<never, never>> = { [M in HostMethodName]?: PluginHandler<M> } & {
+  [M in keyof Custom]?: CustomHandler<Custom[M]>;
+};
 
 /** Launcher notifications the plugin can listen to. cancel is handled by the runtime itself. */
 export type PluginNotificationHandlers = {
@@ -56,7 +67,7 @@ type AnyHandler = (params: never, ctx: PluginContext) => unknown;
 /** Shutdown needs no work from most plugins, so the runtime answers it unless the plugin does. */
 const defaultHandlers: PluginHandlers = { shutdown: () => null };
 
-function bindHandlers(handlers: PluginHandlers, host: () => HostClient): Record<string, RequestHandler> {
+function bindHandlers(handlers: object, host: () => HostClient): Record<string, RequestHandler> {
   const bound: Record<string, RequestHandler> = {};
   const all = { ...defaultHandlers, ...handlers };
   for (const [method, handler] of Object.entries(all) as [string, AnyHandler | undefined][]) {

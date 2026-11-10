@@ -71,6 +71,18 @@ describe('manifest validation', () => {
     const bad = { ...validManifest(), entry: { 'linux-x64': '../evil' } };
     expect(manifestProblems(bad).length).toBeGreaterThan(0);
   });
+
+  test('a command may name the plugin method that runs it', () => {
+    const manifest = validManifest();
+    manifest.contributes.commands = [{ id: 'import-key', label: 'Import key', method: 'demo-site.importKey' }];
+    expect(manifestProblems(manifest)).toEqual([]);
+  });
+
+  test('a command method must be a dotted name', () => {
+    const manifest = validManifest();
+    manifest.contributes.commands = [{ id: 'import-key', label: 'Import key', method: 'importKey' }];
+    expect(manifestProblems(manifest).some((p) => p.startsWith('/contributes/commands/0/method'))).toBe(true);
+  });
 });
 
 describe('zip writer', () => {

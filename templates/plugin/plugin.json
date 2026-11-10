@@ -9,6 +9,7 @@
   },
   "contributes": {
     "sources": [{ "id": "__ID__", "label": "__ID__", "capabilities": ["browse"] }],
+    "commands": [{ "id": "hello", "label": "Say hello", "method": "__ID__.hello" }],
     "settings": { "$ref": "settings.schema.json" }
   },
   "permissions": {

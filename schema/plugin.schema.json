@@ -63,7 +63,7 @@
           }
         },
         "pages": { "type": "array", "items": { "$ref": "#/$defs/page" } },
-        "commands": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
+        "commands": { "type": "array", "items": { "$ref": "#/$defs/command" } },
         "hooks": {
           "type": "array",
           "uniqueItems": true,
@@ -97,6 +97,20 @@
       "properties": {
         "id": { "$ref": "#/$defs/itemId" },
         "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "$ref": "#/$defs/itemId" },
+        "label": { "type": "string", "minLength": 1 },
+        "method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[A-Za-z][A-Za-z0-9]*)+$",
+          "description": "The plugin method the launcher calls to run this command, such as demo.importKey."
+        }
       }
     },
     "source": {

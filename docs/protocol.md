@@ -100,6 +100,29 @@ optional `user`, `message` and `checkedAt`.
 `source.parseRef` takes a URL and returns the `Ref` for it (`kind`, `id`, `url`), or `null`
 when the URL is not one the source knows.
 
+### Plugin-defined methods
+
+A plugin can add its own methods, such as one that runs a command. The launcher calls them
+the same way as `source.*` methods, with a request and an answer.
+
+| Where it is named | What it does |
+|---|---|
+| `contributes.commands[].method` in `plugin.json` | The method the launcher calls when the user runs the command |
+
+```ts
+type PluginMethods = {
+  'demo-site.importKey': { params: Record<string, never>; result: { found: boolean } };
+};
+
+const handlers: PluginHandlers<PluginMethods> = {
+  'demo-site.importKey': async () => ({ found: true }),
+};
+```
+
+> [!NOTE]
+> The type argument of `PluginHandlers` types each plugin method. A handler with the wrong
+> result type does not compile.
+
 ## Plugin services
 
 The launcher checks the permission in the manifest before it runs a service.

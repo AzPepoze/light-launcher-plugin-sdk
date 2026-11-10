@@ -42,11 +42,28 @@ Map each platform to a file inside the package. Keys: `linux-x64`, `linux-arm64`
 | `sources` | A game source: search, fetch, files, updates | `{ id, label, capabilities[] }` |
 | `settings` | A settings form, built from a JSON Schema file | `{ "$ref": "settings.schema.json" }` |
 | `pages` | A page in the app | `{ id, title, path }` |
-| `commands` | An action in the command palette | `{ id, label }` |
+| `commands` | An action in the command palette | `{ id, label, method? }` |
 | `hooks` | Events to react to | `onGameLaunch`, `onGameExit`, `onGameInstalled` |
 | `launchAdapters` | A wrapper around game launch | `{ id, label }` |
 | `importers` | Import games from another launcher | `{ id, label }` |
 | `themes` | Colors and fonts | `{ id, label, path }` |
+
+### commands
+
+| Field | Required | What it means |
+|---|---|---|
+| `id` | yes | Lowercase letters, digits and dashes |
+| `label` | yes | Text shown in the command palette |
+| `method` | no | The plugin method that runs the command, such as `demo-site.importKey` |
+
+When the user runs a command, the launcher calls its `method`. A method name is two parts
+joined by a dot: a lowercase prefix, then letters and digits. By convention the prefix is
+the plugin id. The schema checks only the shape. The plugin answers the method like any
+other. See [Plugin-defined methods](protocol.md#plugin-defined-methods).
+
+```json
+"commands": [{ "id": "import-key", "label": "Import key", "method": "demo-site.importKey" }]
+```
 
 Source capabilities:
 
