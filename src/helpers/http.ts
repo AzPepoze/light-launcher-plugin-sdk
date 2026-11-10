@@ -23,7 +23,31 @@ export interface HttpOptions {
   maxBytes?: number;
   allowStatus?: number[];
   signal?: AbortSignal;
+  /** throw HttpError for any status outside 2xx. A 304 still passes. */
+  throwOnError?: boolean;
 }
+
+export interface HttpClientOptions {
+  /** sent with every request, such as a Cookie header. Per-request headers win. */
+  defaultHeaders?: Record<string, string>;
+  /** response size limit used when a request sets no maxBytes */
+  maxBodyBytes?: number;
+}
+
+/** A failed HTTP call. Keeps the status, the url and the start of the body. */
+export class HttpError extends RpcFailure {
+  constructor(
+    readonly status: number,
+    readonly url: string,
+    readonly bodySnippet: string,
+    message: string,
+  ) {
+    super(status === 429 ? ErrorCode.RateLimited : ErrorCode.RemoteError, message, { status, url });
+    this.name = 'HttpError';
+  }
+}
+
+const BODY_SNIPPET_LENGTH = 200;
 
 export interface ProbeResult {
   url: string;
@@ -81,6 +105,12 @@ function checkStatus(status: number, allowed: number[], url: string): void {
   if (status >= 500) throw new RpcFailure(ErrorCode.RemoteError, `HTTP ${status}: ${url}`);
 }
 
+function assertSuccess(res: HttpResult, url: string): void {
+  if (res.status === 304 || (res.status >= 200 && res.status < 300)) return;
+  const message = `HTTP ${res.status} from ${url}`;
+  throw new HttpError(res.status, res.url || url, res.text.slice(0, BODY_SNIPPET_LENGTH), message);
+}
+
 function headersToRecord(headers: Headers): Record<string, string> {
   const out: Record<string, string> = {};
   headers.forEach((value, key) => {
@@ -90,22 +120,37 @@ function headersToRecord(headers: Headers): Record<string, string> {
 }
 
 export class HttpClient {
-  constructor(private readonly transport: HttpTransport) {}
+  constructor(
+    private readonly transport: HttpTransport,
+    private readonly options: HttpClientOptions = {},
+  ) {}
 
-  request(url: string, options: HttpOptions = {}): Promise<HttpResult> {
-    const { signal, ...params } = options;
-    return this.transport.request({ url, ...params, headers: { ...DEFAULT_HEADERS, ...options.headers } }, { signal });
+  async request(url: string, options: HttpOptions = {}): Promise<HttpResult> {
+    const { signal, throwOnError, ...params } = options;
+    const res = await this.transport.request(
+      {
+        url,
+        ...params,
+        headers: { ...DEFAULT_HEADERS, ...this.options.defaultHeaders, ...options.headers },
+        maxBytes: options.maxBytes ?? this.options.maxBodyBytes,
+      },
+      { signal },
+    );
+    if (throwOnError) assertSuccess(res, url);
+    return res;
   }
 
+  /** Throws HttpError with the status for a failed call or a body that is not JSON. */
   async json<T>(url: string, options: HttpOptions = {}): Promise<T> {
     const res = await this.request(url, {
       ...options,
+      throwOnError: true,
       headers: { Accept: 'application/json', ...options.headers },
     });
     try {
       return JSON.parse(res.text) as T;
     } catch {
-      throw new RpcFailure(ErrorCode.RemoteError, `invalid JSON from ${url}`);
+      throw new HttpError(res.status, res.url || url, res.text.slice(0, BODY_SNIPPET_LENGTH), `invalid JSON from ${url}`);
     }
   }
 

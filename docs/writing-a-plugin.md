@@ -72,6 +72,28 @@ const doc = load(page.text);
 const title = doc('h1').text().trim();
 ```
 
+### HTTP options
+
+| Option | Where | What it does |
+|---|---|---|
+| `defaultHeaders` | `new HttpClient(transport, options)` | Headers sent with every request, such as `Cookie`. A request's own headers win |
+| `maxBodyBytes` | `new HttpClient(transport, options)` | Size limit for a response. A request's `maxBytes` wins |
+| `throwOnError` | per request | Throws `HttpError` for a status outside 2xx. A 304 still passes |
+
+`HttpError` has `status`, `url` and `bodySnippet` (the first 200 characters of the body).
+`client.json()` always throws `HttpError` on a failed status or a body that is not JSON,
+so the status is kept.
+
+```ts
+const http = new HttpClient(hostTransport(ctx.host), { defaultHeaders: { Cookie: session } });
+try {
+  const data = await http.json<Listing>(url);
+} catch (err) {
+  if (err instanceof HttpError && err.status === 404) return { games: [] };
+  throw err;
+}
+```
+
 > [!NOTE]
 > For tests, use `fetchTransport()` instead. It calls `fetch` directly. It has no allow-list,
 > retries or cache, so it is for tests only.

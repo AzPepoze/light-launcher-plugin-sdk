@@ -6,6 +6,7 @@ import {
   fetchTransport,
   guessFilename,
   HttpClient,
+  HttpError,
   hostTransport,
   isNewer,
   load,
@@ -170,5 +171,64 @@ describe('http client', () => {
     const err = await client.request('https://site.test/').catch((e: unknown) => e);
     expect(err).toBeInstanceOf(RpcFailure);
     expect((err as RpcFailure).code).toBe(ErrorCode.RateLimited);
+  });
+
+  test('throwOnError throws HttpError with the status, url and body start', async () => {
+    const { host } = fakeHost(() => ({ status: 500, text: 'boom' }));
+    const client = new HttpClient(hostTransport(host));
+    const err = await client.request('https://api.test/x', { throwOnError: true }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HttpError);
+    expect(err).toBeInstanceOf(RpcFailure);
+    expect(err).toMatchObject({ status: 500, url: 'https://api.test/x', bodySnippet: 'boom', code: ErrorCode.RemoteError });
+  });
+
+  test('throwOnError lets a 304 through and maps 429 to a rate-limit code', async () => {
+    const { host } = fakeHost((params) =>
+      params.url.endsWith('/cached') ? { status: 304, text: '', notModified: true } : { status: 429 },
+    );
+    const client = new HttpClient(hostTransport(host));
+    expect((await client.request('https://api.test/cached', { throwOnError: true })).notModified).toBe(true);
+    const err = await client.request('https://api.test/x', { throwOnError: true }).catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 429, code: ErrorCode.RateLimited });
+  });
+
+  test('without throwOnError a failed status is returned as a result', async () => {
+    const { host } = fakeHost(() => ({ status: 404, text: 'gone' }));
+    const client = new HttpClient(hostTransport(host));
+    expect((await client.request('https://api.test/x')).status).toBe(404);
+  });
+
+  test('json keeps the status when the call fails', async () => {
+    const { host } = fakeHost(() => ({ status: 403, text: '{"error":"no"}' }));
+    const client = new HttpClient(hostTransport(host));
+    const err = await client.json('https://api.test/x').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HttpError);
+    expect(err).toMatchObject({ status: 403, bodySnippet: '{"error":"no"}' });
+  });
+
+  test('json keeps the status when the body is not JSON', async () => {
+    const { host } = fakeHost(() => ({ status: 200, text: '<html>maintenance</html>' }));
+    const client = new HttpClient(hostTransport(host));
+    const err = await client.json('https://api.test/x').catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 200, message: 'invalid JSON from https://api.test/x' });
+    expect(err).toBeInstanceOf(HttpError);
+  });
+
+  test('defaultHeaders such as a cookie go out with every request, and per-request headers win', async () => {
+    const { host, calls } = fakeHost(() => ({}));
+    const client = new HttpClient(hostTransport(host), { defaultHeaders: { Cookie: 'session=1' } });
+    await client.request('https://forum.test/a');
+    await client.request('https://forum.test/b', { headers: { Cookie: 'session=2' } });
+    expect(calls[0].headers?.Cookie).toBe('session=1');
+    expect(calls[1].headers?.Cookie).toBe('session=2');
+  });
+
+  test('maxBodyBytes applies unless a request sets its own maxBytes', async () => {
+    const { host, calls } = fakeHost(() => ({}));
+    const client = new HttpClient(hostTransport(host), { maxBodyBytes: 1000 });
+    await client.request('https://files.test/a');
+    await client.request('https://files.test/b', { maxBytes: 50 });
+    expect(calls[0].maxBytes).toBe(1000);
+    expect(calls[1].maxBytes).toBe(50);
   });
 });
