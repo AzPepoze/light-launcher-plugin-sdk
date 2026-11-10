@@ -35,7 +35,7 @@
       "required": ["jsonrpc", "id"],
       "properties": {
         "jsonrpc": { "const": "2.0" },
-        "id": { "$ref": "#/$defs/requestId" },
+        "id": { "type": ["string", "number", "null"], "description": "null only when the request line could not be parsed." },
         "result": {},
         "error": { "$ref": "#/$defs/rpcError" }
       },
