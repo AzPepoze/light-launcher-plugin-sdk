@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { ErrorCode, RpcFailure } from '../src/types/protocol';
-import { servePlugin, type PluginHandlers } from '../src/runtime';
+import { RpcPeer, servePlugin, type PluginHandlers } from '../src/runtime';
 import { memoryIo, until } from './support/memory-io';
 
 const initializeParams = {
@@ -301,5 +301,50 @@ describe('shutdown', () => {
     plugin.end();
     await plugin.done;
     expect(plugin.outgoing()).toEqual([]);
+  });
+
+  test('shutdown waits for a request that is still calling the host, so its answer is not lost', async () => {
+    const plugin = startPlugin({
+      'source.fetchGame': async (_params, ctx) => {
+        const apiKey = await ctx.host.secrets.get('apiKey');
+        return { game: { source: 'x', sourceId: '1', url: 'u', title: apiKey ?? '' } };
+      },
+    });
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.fetchGame","params":{}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    const secretCall = plugin.outgoing()[0];
+    expect(secretCall).toMatchObject({ method: 'secrets.get' });
+
+    plugin.send('{"jsonrpc":"2.0","id":2,"method":"shutdown","params":{}}\n');
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: secretCall.id, result: { value: 'key-1' } }) + '\n');
+    await plugin.done;
+
+    expect(plugin.outgoing()).toEqual([
+      secretCall,
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        result: { game: { source: 'x', sourceId: '1', url: 'u', title: 'key-1' } },
+      },
+      { jsonrpc: '2.0', id: 2, result: null },
+    ]);
+  });
+
+  test('shutdown answers after the grace period when a request never finishes', async () => {
+    const mem = memoryIo();
+    const peer = new RpcPeer({
+      write: mem.io.write,
+      requests: {
+        'source.sync': () => new Promise(() => {}),
+        shutdown: () => null,
+      },
+      endAfter: 'shutdown',
+      shutdownGraceMs: 20,
+    });
+    const done = peer.start(mem.io.input);
+    mem.send('{"jsonrpc":"2.0","id":1,"method":"source.sync","params":{}}\n');
+    mem.send('{"jsonrpc":"2.0","id":2,"method":"shutdown","params":{}}\n');
+    await done;
+    expect(mem.outgoing()).toEqual([{ jsonrpc: '2.0', id: 2, result: null }]);
   });
 });

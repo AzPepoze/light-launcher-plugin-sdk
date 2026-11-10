@@ -17,6 +17,9 @@ export interface ProgressReport {
   message?: string;
 }
 
+/** How long shutdown waits for requests that are still running. */
+export const SHUTDOWN_GRACE_MS = 2000;
+
 /** Given to every incoming request handler. */
 export interface CallContext {
   id: RequestId;
@@ -39,6 +42,7 @@ export interface PeerOptions {
   notifications?: Record<string, NotificationHandler>;
   /** the peer closes after answering this method, such as shutdown */
   endAfter?: string;
+  shutdownGraceMs?: number;
 }
 
 interface Pending {
@@ -47,10 +51,16 @@ interface Pending {
   cleanup(): void;
 }
 
+interface Inbound {
+  controller: AbortController;
+  /** resolves when the handler has answered; never rejects */
+  settled: Promise<void>;
+}
+
 export class RpcPeer {
   private nextId = 1;
   private readonly pending = new Map<RequestId, Pending>();
-  private readonly inbound = new Map<RequestId, AbortController>();
+  private readonly inbound = new Map<RequestId, Inbound>();
   private readonly closed: Promise<void>;
   private resolveClosed!: () => void;
   private readonly stopReading = new AbortController();
@@ -105,7 +115,7 @@ export class RpcPeer {
     for (const id of [...this.pending.keys()]) {
       this.settle(id, new RpcFailure(ErrorCode.InternalError, 'connection closed'));
     }
-    for (const controller of this.inbound.values()) controller.abort();
+    for (const call of this.inbound.values()) call.controller.abort();
     this.inbound.clear();
     this.stopReading.abort();
     this.resolveClosed();
@@ -152,13 +162,13 @@ export class RpcPeer {
       return;
     }
     const controller = new AbortController();
-    this.inbound.set(request.id, controller);
     const ctx: CallContext = {
       id: request.id,
       signal: controller.signal,
       progress: (report) => this.notify('progress', { id: request.id, ...report }),
     };
-    void this.runHandler(handler, request, ctx, controller);
+    const settled = this.runHandler(handler, request, ctx, controller);
+    this.inbound.set(request.id, { controller, settled });
   }
 
   private async runHandler(
@@ -168,6 +178,7 @@ export class RpcPeer {
     controller: AbortController,
   ): Promise<void> {
     try {
+      if (request.method === this.options.endAfter) await this.waitForInFlight(request.id);
       const result = await handler(request.params, ctx);
       this.inbound.delete(request.id);
       this.send({ jsonrpc: JSONRPC_VERSION, id: request.id, result: result ?? null });
@@ -178,6 +189,23 @@ export class RpcPeer {
     this.finishRequest(request.method);
   }
 
+  /** Lets the other inbound requests finish, so their answers are not lost when the peer closes. */
+  private async waitForInFlight(exceptId: RequestId): Promise<void> {
+    const others = [...this.inbound.entries()]
+      .filter(([id]) => id !== exceptId)
+      .map(([, call]) => call.settled);
+    if (others.length === 0) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const grace = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, this.options.shutdownGraceMs ?? SHUTDOWN_GRACE_MS);
+    });
+    try {
+      await Promise.race([Promise.allSettled(others), grace]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private finishRequest(method: string): void {
     if (method === this.options.endAfter) this.close();
   }
@@ -185,7 +213,7 @@ export class RpcPeer {
   private handleNotification(notification: RpcNotification): void {
     if (notification.method === 'cancel') {
       const id = (notification.params as { id?: RequestId } | undefined)?.id;
-      if (id !== undefined) this.inbound.get(id)?.abort();
+      if (id !== undefined) this.inbound.get(id)?.controller.abort();
       return;
     }
     this.options.notifications?.[notification.method]?.(notification.params);
@@ -198,6 +226,7 @@ export class RpcPeer {
   }
 
   private send(message: object): void {
+    if (this.isClosed) return;
     this.options.write(encodeLine(message));
   }
 }

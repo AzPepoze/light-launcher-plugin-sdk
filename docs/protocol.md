@@ -30,7 +30,8 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 
 1. The launcher sends `initialize`. The plugin answers with its version and capabilities.
 2. The launcher sends `source.*` requests as the user works.
-3. The launcher sends `shutdown`. The plugin answers, then exits.
+3. The launcher sends `shutdown`. The plugin lets running requests finish for up to 2 seconds,
+   answers `shutdown`, then exits.
 
 > [!IMPORTANT]
 > The launcher never sends a credential in `initialize`. The plugin reads and saves its
