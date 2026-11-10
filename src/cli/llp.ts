@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import path from 'node:path';
+import { conformanceCommand } from './commands/conformance';
 import { initCommand } from './commands/init';
 import { packCommand } from './commands/pack';
 import { validateCommand } from './commands/validate';
@@ -10,6 +11,7 @@ const USAGE = `llp - Light Launcher plugin tool
   llp init <id>                  create a plugin folder from the template
   llp validate [dir]             check plugin.json against the schema
   llp pack [dir] [--out <dir>]   build <id>-<version>.llplugin
+  llp test [dir]                 run the plugin and check the protocol
 `;
 
 interface ParsedArgs {
@@ -43,6 +45,8 @@ export async function main(argv: string[], cwd = process.cwd()): Promise<number>
       return validateCommand(cwdPath(positional[0]), createLogger('validate'));
     case 'pack':
       return packCommand(cwdPath(positional[0]), out ? cwdPath(out) : cwd, createLogger('pack'));
+    case 'test':
+      return conformanceCommand(cwdPath(positional[0]), createLogger('test'));
     case undefined:
     case '--help':
     case 'help':

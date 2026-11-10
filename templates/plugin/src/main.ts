@@ -11,6 +11,8 @@ const handlers: PluginHandlers = {
     ctx.host.log('debug', 'search called');
     return { games: [] };
   },
+  // Return a ref when the URL belongs to this source, otherwise null.
+  'source.parseRef': () => null,
 };
 
 await servePlugin(handlers);
