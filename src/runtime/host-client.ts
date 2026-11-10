@@ -1,6 +1,7 @@
 import type { GameDTO } from '../types/game';
 import type {
   BrowserAssistParams,
+  BrowserAssistResult,
   EnqueueDownloadParams,
   ExtractParams,
   HttpRequestParams,
@@ -31,6 +32,7 @@ export interface HostClient {
   secrets: {
     get(key: string): Promise<string | null>;
     set(key: string, value: string): Promise<void>;
+    delete(key: string): Promise<void>;
   };
   storage: {
     get(key: string): Promise<unknown>;
@@ -49,8 +51,8 @@ export interface HostClient {
     get(): Promise<Record<string, unknown>>;
   };
   browser: {
-    /** resolves with the captured download link, or null */
-    assist(params: BrowserAssistParams, options?: RequestOptions): Promise<string | null>;
+    /** resolves with the captured download link (or null) and the file info when the host has it */
+    assist(params: BrowserAssistParams, options?: RequestOptions): Promise<BrowserAssistResult>;
   };
   log(level: LogLevel, message: string, data?: unknown): void;
   notify(level: 'info' | 'warn' | 'error' | 'success', message: string): void;
@@ -70,6 +72,9 @@ export function createHostClient(transport: HostTransport): HostClient {
       set: async (key, value) => {
         await call('secrets.set', { key, value });
       },
+      delete: async (key) => {
+        await call('secrets.delete', { key });
+      },
     },
     storage: {
       get: async (key) => (await call('storage.get', { key })).value,
@@ -88,7 +93,7 @@ export function createHostClient(transport: HostTransport): HostClient {
       get: async () => (await call('settings.get', {})).settings,
     },
     browser: {
-      assist: async (params, options) => (await call('browser.assist', params, options)).capturedUrl,
+      assist: (params, options) => call('browser.assist', params, options),
     },
     log: (level, message, data) => {
       transport.notify('log', data === undefined ? { level, message } : { level, message, data });

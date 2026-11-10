@@ -74,11 +74,11 @@ describe('request handling', () => {
   });
 
   test('joins lines split across chunks and accepts CRLF', async () => {
-    const plugin = startPlugin({ 'source.sync': () => ({ games: [] }) });
+    const plugin = startPlugin({ 'source.sync': () => [] });
     plugin.send('{"jsonrpc":"2.0","id":3,"method":"source.sy');
     plugin.send('nc","params":{}}\r\n');
     await until(() => plugin.outgoing().length === 1);
-    expect(plugin.outgoing()[0]).toMatchObject({ id: 3, result: { games: [] } });
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 3, result: [] });
     plugin.end();
     await plugin.done;
   });
@@ -104,7 +104,7 @@ describe('cancellation and progress', () => {
     const plugin = startPlugin({
       'source.sync': (_params, ctx) => {
         ctx.progress({ done: 1, total: 4, message: 'page 1' });
-        return { games: [] };
+        return [];
       },
     });
     plugin.send('{"jsonrpc":"2.0","id":9,"method":"source.sync","params":{}}\n');
@@ -116,6 +116,81 @@ describe('cancellation and progress', () => {
     });
     plugin.end();
     await plugin.done;
+  });
+});
+
+describe('secrets round trip', () => {
+  test('set, get and delete reach the host, and the plugin reports the stored state', async () => {
+    const plugin = startPlugin({
+      'source.setCredential': async (params, ctx) => {
+        await ctx.host.secrets.set('credential', params.value);
+        return { status: 'ok' };
+      },
+      'source.authStatus': async (_params, ctx) => {
+        const value = await ctx.host.secrets.get('credential');
+        return { status: value ? 'ok' : 'unconfigured' };
+      },
+      'source.clearCredential': async (_params, ctx) => {
+        await ctx.host.secrets.delete('credential');
+        return { status: 'unconfigured' };
+      },
+    });
+
+    // Answers each secrets call from a plain map, the way the launcher's store would.
+    const store = new Map<string, string>();
+    let read = 0;
+    async function nextOutgoing(): Promise<Record<string, any>> {
+      await until(() => plugin.outgoing().length > read);
+      return plugin.outgoing()[read++];
+    }
+
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.setCredential","params":{"source":"x","value":"s3cret"}}\n');
+    const write = await nextOutgoing();
+    expect(write).toMatchObject({ method: 'secrets.set', params: { key: 'credential', value: 's3cret' } });
+    store.set(write.params.key, write.params.value);
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: write.id, result: null }) + '\n');
+    expect(await nextOutgoing()).toEqual({ jsonrpc: '2.0', id: 1, result: { status: 'ok' } });
+
+    plugin.send('{"jsonrpc":"2.0","id":2,"method":"source.authStatus","params":{"source":"x"}}\n');
+    const read1 = await nextOutgoing();
+    expect(read1).toMatchObject({ method: 'secrets.get', params: { key: 'credential' } });
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: read1.id, result: { value: store.get('credential') ?? null } }) + '\n');
+    expect(await nextOutgoing()).toEqual({ jsonrpc: '2.0', id: 2, result: { status: 'ok' } });
+
+    plugin.send('{"jsonrpc":"2.0","id":3,"method":"source.clearCredential","params":{"source":"x"}}\n');
+    const remove = await nextOutgoing();
+    expect(remove).toMatchObject({ method: 'secrets.delete', params: { key: 'credential' } });
+    store.delete(remove.params.key);
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: remove.id, result: null }) + '\n');
+    expect(await nextOutgoing()).toEqual({ jsonrpc: '2.0', id: 3, result: { status: 'unconfigured' } });
+
+    expect(store.size).toBe(0);
+    plugin.end();
+    await plugin.done;
+  });
+});
+
+describe('browser assist notifications', () => {
+  test('the host can send browser progress and waiting notifications to the plugin', async () => {
+    const seen: unknown[] = [];
+    const mem = memoryIo();
+    const done = servePlugin(
+      {},
+      mem.io,
+      {
+        'browser.progress': (params) => seen.push(['progress', params]),
+        'browser.waiting': (params) => seen.push(['waiting', params]),
+      },
+    );
+    mem.send('{"jsonrpc":"2.0","method":"browser.waiting","params":{"token":"4","message":"Press download"}}\n');
+    mem.send('{"jsonrpc":"2.0","method":"browser.progress","params":{"token":"4","percent":50}}\n');
+    await until(() => seen.length === 2);
+    expect(seen).toEqual([
+      ['waiting', { token: '4', message: 'Press download' }],
+      ['progress', { token: '4', percent: 50 }],
+    ]);
+    mem.end();
+    await done;
   });
 });
 
@@ -157,7 +232,7 @@ describe('host client', () => {
         } catch (err) {
           caught = err;
         }
-        return { games: [] };
+        return [];
       },
     });
     plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.sync","params":{}}\n');
@@ -178,7 +253,7 @@ describe('host client', () => {
         await ctx.host.call('settings.get', {}, { timeoutMs: 5 }).catch((err: RpcFailure) => {
           caught = err;
         });
-        return { games: [] };
+        return [];
       },
     });
     plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.sync","params":{}}\n');
@@ -193,7 +268,7 @@ describe('host client', () => {
       'source.sync': (_params, ctx) => {
         ctx.host.log('info', 'syncing');
         ctx.host.notify('success', 'done');
-        return { games: [] };
+        return [];
       },
     });
     plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.sync","params":{}}\n');

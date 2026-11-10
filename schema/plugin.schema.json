@@ -109,7 +109,13 @@
         "capabilities": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["browse", "auth", "updateCheck", "resolveFiles", "sync"] }
+          "items": { "enum": ["browse", "auth", "updateCheck", "resolveFiles", "sync:games", "sync:index"] },
+          "not": {
+            "allOf": [
+              { "contains": { "const": "sync:games" } },
+              { "contains": { "const": "sync:index" } }
+            ]
+          }
         }
       }
     },

@@ -1,7 +1,11 @@
 /** Shape of plugin.json. Matches schema/plugin.schema.json. */
 
 export type PluginHook = 'onGameLaunch' | 'onGameExit' | 'onGameInstalled';
-export type SourceCapability = 'browse' | 'auth' | 'updateCheck' | 'resolveFiles' | 'sync';
+/**
+ * "sync:games" means source.sync returns GameDTO[].
+ * "sync:index" means source.sync returns a SyncStatus. Declare at most one.
+ */
+export type SourceCapability = 'browse' | 'auth' | 'updateCheck' | 'resolveFiles' | 'sync:games' | 'sync:index';
 export type EntryKey = `${'linux' | 'windows' | 'mac'}-${'x64' | 'arm64'}`;
 
 export interface SourceContribution {

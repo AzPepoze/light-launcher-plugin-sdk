@@ -1,6 +1,6 @@
-import type { HostMethodName, HostMethods } from '../types/methods';
+import type { HostMethodName, HostMethods, HostNotifications } from '../types/methods';
 import { createHostClient, type HostClient } from './host-client';
-import { RpcPeer, type CallContext, type RequestHandler } from './peer';
+import { RpcPeer, type CallContext, type NotificationHandler, type RequestHandler } from './peer';
 
 /** Handler context: the call context plus the typed host client. */
 export interface PluginContext extends CallContext {
@@ -13,6 +13,11 @@ export type PluginHandler<M extends HostMethodName> = (
 ) => HostMethods[M]['result'] | Promise<HostMethods[M]['result']>;
 
 export type PluginHandlers = { [M in HostMethodName]?: PluginHandler<M> };
+
+/** Launcher notifications the plugin can listen to. cancel is handled by the runtime itself. */
+export type PluginNotificationHandlers = {
+  [M in Exclude<keyof HostNotifications, 'cancel'>]?: (params: HostNotifications[M]) => void;
+};
 
 /** Where the protocol lines come from and go to. */
 export interface PluginIo {
@@ -31,10 +36,15 @@ export function stdioIo(): PluginIo {
 }
 
 /** Runs the plugin until the host sends shutdown or closes the input. */
-export function servePlugin(handlers: PluginHandlers, io: PluginIo = stdioIo()): Promise<void> {
+export function servePlugin(
+  handlers: PluginHandlers,
+  io: PluginIo = stdioIo(),
+  notifications: PluginNotificationHandlers = {},
+): Promise<void> {
   const peer = new RpcPeer({
     write: io.write,
     requests: bindHandlers(handlers, () => host),
+    notifications: notifications as Record<string, NotificationHandler>,
     endAfter: 'shutdown',
   });
   const host = createHostClient(peer);
@@ -43,9 +53,13 @@ export function servePlugin(handlers: PluginHandlers, io: PluginIo = stdioIo()):
 
 type AnyHandler = (params: never, ctx: PluginContext) => unknown;
 
+/** Shutdown needs no work from most plugins, so the runtime answers it unless the plugin does. */
+const defaultHandlers: PluginHandlers = { shutdown: () => null };
+
 function bindHandlers(handlers: PluginHandlers, host: () => HostClient): Record<string, RequestHandler> {
   const bound: Record<string, RequestHandler> = {};
-  for (const [method, handler] of Object.entries(handlers) as [string, AnyHandler | undefined][]) {
+  const all = { ...defaultHandlers, ...handlers };
+  for (const [method, handler] of Object.entries(all) as [string, AnyHandler | undefined][]) {
     if (!handler) continue;
     bound[method] = (params, ctx) => handler(params as never, { ...ctx, host: host() });
   }

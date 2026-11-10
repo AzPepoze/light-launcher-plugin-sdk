@@ -1,5 +1,6 @@
 /** Typed params and results for every method and notification in schema/protocol.schema.json. */
 import type {
+  AuthState,
   FileCandidate,
   GameDTO,
   GameRef,
@@ -22,6 +23,8 @@ export interface InitializeParams {
   apiVersion: string;
   platform: Platform;
   grantedPermissions: GrantedPermissions;
+  /** private folder for this plugin. Keep caches and indexes here. */
+  dataDir: string;
 }
 
 export interface InitializeResult {
@@ -83,8 +86,36 @@ export interface SyncParams {
   source: string;
 }
 
-export interface SyncResult {
-  games: GameDTO[];
+/** Summary of a sync:index source. The index itself stays in the plugin's dataDir. */
+export interface SyncStatus {
+  count: number;
+  syncedAt: string | null;
+  /** true while a sync is still running */
+  running: boolean;
+}
+
+/**
+ * source.sync answers with a SyncStatus for a "sync:index" source,
+ * or with the games for a "sync:games" source.
+ */
+export type SyncResult = SyncStatus | GameDTO[];
+
+export interface AuthStatusParams {
+  source: string;
+}
+
+export interface SetCredentialParams {
+  source: string;
+  /** the secret the user typed, such as a cookie or an API key */
+  value: string;
+}
+
+export interface ClearCredentialParams {
+  source: string;
+}
+
+export interface ParseRefParams {
+  url: string;
 }
 
 export interface HostMethods {
@@ -96,6 +127,13 @@ export interface HostMethods {
   'source.prepareDownload': { params: PrepareDownloadParams; result: PrepareDownloadResult };
   'source.checkUpdate': { params: CheckUpdateParams; result: CheckUpdateResult };
   'source.sync': { params: SyncParams; result: SyncResult };
+  /** The plugin validates the credential, then saves it with secrets.set. */
+  'source.setCredential': { params: SetCredentialParams; result: AuthState };
+  'source.authStatus': { params: AuthStatusParams; result: AuthState };
+  /** Removes the credential with secrets.delete. */
+  'source.clearCredential': { params: ClearCredentialParams; result: AuthState };
+  /** Returns the ref for a URL the plugin understands, or null. */
+  'source.parseRef': { params: ParseRefParams; result: Ref | null };
 }
 
 export type HostMethodName = keyof HostMethods;
@@ -135,6 +173,10 @@ export interface SecretGetResult {
 export interface SecretSetParams {
   key: string;
   value: string;
+}
+
+export interface SecretDeleteParams {
+  key: string;
 }
 
 export interface StorageGetParams {
@@ -185,18 +227,21 @@ export interface SettingsGetResult {
 
 export interface BrowserAssistParams {
   url: string;
-  message?: string;
   timeoutMs?: number;
 }
 
 export interface BrowserAssistResult {
+  /** the download link the browser caught, or null when nothing was caught */
   capturedUrl: string | null;
+  filename?: string;
+  size?: number;
 }
 
 export interface PluginMethods {
   'http.request': { params: HttpRequestParams; result: HttpRequestResult };
   'secrets.get': { params: SecretGetParams; result: SecretGetResult };
   'secrets.set': { params: SecretSetParams; result: null };
+  'secrets.delete': { params: SecretDeleteParams; result: null };
   'storage.get': { params: StorageGetParams; result: StorageGetResult };
   'storage.set': { params: StorageSetParams; result: null };
   'downloads.enqueue': { params: EnqueueDownloadParams; result: EnqueueDownloadResult };
@@ -234,8 +279,22 @@ export interface NotifyParams {
   message: string;
 }
 
+/** Sent by the launcher while a browser.assist call is open. token is that call's request id as a string. */
+export interface BrowserProgressParams {
+  token: string;
+  percent: number;
+  message?: string;
+}
+
+export interface BrowserWaitingParams {
+  token: string;
+  message: string;
+}
+
 export interface HostNotifications {
   cancel: CancelParams;
+  'browser.progress': BrowserProgressParams;
+  'browser.waiting': BrowserWaitingParams;
 }
 
 export interface PluginNotifications {

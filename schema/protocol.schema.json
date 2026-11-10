@@ -206,6 +206,18 @@
     "headers": {
       "type": "object",
       "additionalProperties": { "type": "string" }
+    },
+
+    "syncStatus": {
+      "type": "object",
+      "description": "Summary of a sync:index source. The index stays in the plugin's dataDir.",
+      "required": ["count", "syncedAt", "running"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "syncedAt": { "type": ["string", "null"] },
+        "running": { "type": "boolean", "description": "true while a sync is still running." }
+      },
+      "additionalProperties": false
     }
   },
 
@@ -214,12 +226,13 @@
       "direction": "host-to-plugin",
       "params": {
         "type": "object",
-        "required": ["hostVersion", "apiVersion", "platform", "grantedPermissions"],
+        "required": ["hostVersion", "apiVersion", "platform", "grantedPermissions", "dataDir"],
         "properties": {
           "hostVersion": { "type": "string" },
           "apiVersion": { "type": "string" },
           "platform": { "$ref": "#/$defs/platform" },
-          "grantedPermissions": { "$ref": "#/$defs/permissions" }
+          "grantedPermissions": { "$ref": "#/$defs/permissions" },
+          "dataDir": { "type": "string", "description": "Private folder for this plugin. Keep caches and indexes here." }
         },
         "additionalProperties": false
       },
@@ -351,6 +364,7 @@
 
     "source.sync": {
       "direction": "host-to-plugin",
+      "description": "A sync:games source answers with an array of games. A sync:index source answers with a syncStatus object.",
       "params": {
         "type": "object",
         "required": ["source"],
@@ -358,10 +372,62 @@
         "additionalProperties": false
       },
       "result": {
+        "oneOf": [
+          { "$ref": "#/$defs/syncStatus" },
+          { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } }
+        ]
+      }
+    },
+
+    "source.setCredential": {
+      "direction": "host-to-plugin",
+      "description": "The plugin validates the value, then saves it with secrets.set. The value is never sent in initialize.",
+      "params": {
         "type": "object",
-        "required": ["games"],
-        "properties": { "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } } },
+        "required": ["source", "value"],
+        "properties": {
+          "source": { "type": "string" },
+          "value": { "type": "string" }
+        },
         "additionalProperties": false
+      },
+      "result": { "$ref": "#/$defs/authState" }
+    },
+
+    "source.authStatus": {
+      "direction": "host-to-plugin",
+      "params": {
+        "type": "object",
+        "required": ["source"],
+        "properties": { "source": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": { "$ref": "#/$defs/authState" }
+    },
+
+    "source.clearCredential": {
+      "direction": "host-to-plugin",
+      "description": "The plugin removes the stored value with secrets.delete.",
+      "params": {
+        "type": "object",
+        "required": ["source"],
+        "properties": { "source": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": { "$ref": "#/$defs/authState" }
+    },
+
+    "source.parseRef": {
+      "direction": "host-to-plugin",
+      "description": "Returns the ref for a URL this plugin understands, or null.",
+      "params": {
+        "type": "object",
+        "required": ["url"],
+        "properties": { "url": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "result": {
+        "oneOf": [{ "$ref": "#/$defs/ref" }, { "type": "null" }]
       }
     },
 
@@ -425,6 +491,18 @@
           "key": { "type": "string" },
           "value": { "type": "string" }
         },
+        "additionalProperties": false
+      },
+      "result": { "type": "null" }
+    },
+
+    "secrets.delete": {
+      "direction": "plugin-to-host",
+      "permission": "secrets",
+      "params": {
+        "type": "object",
+        "required": ["key"],
+        "properties": { "key": { "type": "string" } },
         "additionalProperties": false
       },
       "result": { "type": "null" }
@@ -537,13 +615,12 @@
     "browser.assist": {
       "direction": "plugin-to-host",
       "permission": "browser",
-      "description": "Opens the system browser and waits for a download link to be captured.",
+      "description": "Opens the system browser at url and waits for a download link to be captured. The launcher sends browser.progress and browser.waiting while it runs.",
       "params": {
         "type": "object",
         "required": ["url"],
         "properties": {
           "url": { "type": "string" },
-          "message": { "type": "string" },
           "timeoutMs": { "type": "integer", "minimum": 1 }
         },
         "additionalProperties": false
@@ -551,7 +628,11 @@
       "result": {
         "type": "object",
         "required": ["capturedUrl"],
-        "properties": { "capturedUrl": { "type": ["string", "null"] } },
+        "properties": {
+          "capturedUrl": { "type": ["string", "null"], "description": "The download link, or null when nothing was captured." },
+          "filename": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 }
+        },
         "additionalProperties": false
       }
     }
@@ -565,6 +646,35 @@
         "type": "object",
         "required": ["id"],
         "properties": { "id": { "$ref": "#/$defs/requestId" } },
+        "additionalProperties": false
+      }
+    },
+
+    "browser.progress": {
+      "direction": "host-to-plugin",
+      "description": "Progress of the browser.assist call whose request id is token.",
+      "params": {
+        "type": "object",
+        "required": ["token", "percent"],
+        "properties": {
+          "token": { "type": "string", "description": "The browser.assist request id, as a string." },
+          "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "browser.waiting": {
+      "direction": "host-to-plugin",
+      "description": "The browser is open and the user must act, such as press a download button.",
+      "params": {
+        "type": "object",
+        "required": ["token", "message"],
+        "properties": {
+          "token": { "type": "string", "description": "The browser.assist request id, as a string." },
+          "message": { "type": "string" }
+        },
         "additionalProperties": false
       }
     },
