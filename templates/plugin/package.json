@@ -7,6 +7,6 @@
     "build": "bun build --compile src/main.ts --outfile bin/linux-x64/__ID__"
   },
   "dependencies": {
-    "@light-launcher/plugin-sdk": "0.1.0"
+    "@light-launcher/plugin-sdk": "link:@light-launcher/plugin-sdk"
   }
 }
