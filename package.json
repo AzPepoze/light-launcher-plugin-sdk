@@ -9,6 +9,7 @@
     "./types": "./src/types/index.ts",
     "./runtime": "./src/runtime/index.ts",
     "./helpers": "./src/helpers/index.ts",
+    "./manifest": "./src/schema/manifest.ts",
     "./schema/*": "./schema/*"
   },
   "description": "SDK for writing Light Launcher plugins: protocol types, plugin runtime, helpers and the llp CLI.",

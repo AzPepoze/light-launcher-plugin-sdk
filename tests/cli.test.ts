@@ -7,7 +7,7 @@ import { initCommand } from '../src/cli/commands/init';
 import { packCommand, planPackage } from '../src/cli/commands/pack';
 import { validateCommand } from '../src/cli/commands/validate';
 import { categoryColor, createLogger, fnv1a, formatLine, type LineSink } from '../src/cli/log';
-import { manifestProblems } from '../src/cli/manifest';
+import { manifestProblems } from '../src/schema/manifest';
 import { writeZip, type ZipEntry } from '../src/cli/zip';
 import type { PluginManifest } from '../src/types/manifest';
 
