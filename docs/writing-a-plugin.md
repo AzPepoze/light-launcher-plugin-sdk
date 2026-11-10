@@ -51,6 +51,11 @@ await servePlugin(handlers);
 > Use `ctx.host.log(level, message)` for logs. The launcher shows them. Never use `console.log`,
 > because stdout carries the protocol.
 
+> [!TIP]
+> Pass `{ validateParams: true }` as the fourth argument of `servePlugin` to check the params the
+> launcher sends against the protocol schema. A bad request gets error `-32602` and your handler
+> does not run. The check is off by default.
+
 ## 3. Use the helpers
 
 The helpers wrap the host calls, so your code reads like normal code.

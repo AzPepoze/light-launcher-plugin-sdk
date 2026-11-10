@@ -170,6 +170,80 @@ describe('secrets round trip', () => {
   });
 });
 
+describe('param validation', () => {
+  function startValidated(handlers: PluginHandlers) {
+    const mem = memoryIo();
+    const done = servePlugin(handlers, mem.io, {}, { validateParams: true });
+    return { ...mem, done };
+  }
+
+  test('bad params get invalid params and the handler does not run', async () => {
+    let ran = false;
+    const plugin = startValidated({
+      'source.search': () => {
+        ran = true;
+        return { games: [] };
+      },
+    });
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.search","params":{"source":"x","page":0}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 1, error: { code: ErrorCode.InvalidParams } });
+    expect(String((plugin.outgoing()[0].error as { message: string }).message)).toContain('/page');
+    expect(ran).toBe(false);
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('params that match the schema reach the handler', async () => {
+    const plugin = startValidated({
+      'source.search': (params) => ({ games: [{ source: params.source, sourceId: '1', url: 'u', title: 't' }] }),
+    });
+    plugin.send('{"jsonrpc":"2.0","id":2,"method":"source.search","params":{"source":"x","query":"q","page":2}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 2, result: { games: [{ source: 'x' }] } });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('a missing required field is reported by name', async () => {
+    const plugin = startValidated({
+      'source.fetchGame': () => ({ game: { source: 'x', sourceId: '1', url: 'u', title: 't' } }),
+    });
+    plugin.send('{"jsonrpc":"2.0","id":3,"method":"source.fetchGame","params":{"source":"x"}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 3, error: { code: ErrorCode.InvalidParams } });
+    expect(String((plugin.outgoing()[0].error as { message: string }).message)).toContain('ref');
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('validation is off by default, so bad params reach the handler', async () => {
+    let received: unknown;
+    const plugin = startPlugin({
+      'source.search': (params) => {
+        received = params;
+        return { games: [] };
+      },
+    });
+    plugin.send('{"jsonrpc":"2.0","id":4,"method":"source.search","params":{"page":0}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(received).toEqual({ page: 0 });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('plugin-defined methods are not checked against the protocol schema', async () => {
+    type DemoMethods = { 'demo.run': { params: Record<string, unknown>; result: { ok: boolean } } };
+    const handlers: PluginHandlers<DemoMethods> = { 'demo.run': () => ({ ok: true }) };
+    const plugin = startValidated(handlers);
+    plugin.send('{"jsonrpc":"2.0","id":5,"method":"demo.run","params":{"anything":1}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toEqual({ jsonrpc: '2.0', id: 5, result: { ok: true } });
+    plugin.end();
+    await plugin.done;
+  });
+});
+
 describe('plugin-defined methods', () => {
   type ItchMethods = {
     'itch.importDesktopKey': { params: Record<string, never>; result: { found: boolean } };
