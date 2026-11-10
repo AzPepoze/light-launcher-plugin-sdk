@@ -53,6 +53,7 @@ export class RpcPeer {
   private readonly inbound = new Map<RequestId, AbortController>();
   private readonly closed: Promise<void>;
   private resolveClosed!: () => void;
+  private readonly stopReading = new AbortController();
   private isClosed = false;
 
   constructor(private readonly options: PeerOptions) {
@@ -63,7 +64,7 @@ export class RpcPeer {
 
   /** Starts reading lines. Resolves when the input ends or the peer closes. */
   start(input: ReadableStream<Uint8Array>): Promise<void> {
-    readLines(input, (line) => this.receive(line))
+    readLines(input, (line) => this.receive(line), this.stopReading.signal)
       .catch(() => {})
       .finally(() => this.close());
     return this.closed;
@@ -106,10 +107,12 @@ export class RpcPeer {
     }
     for (const controller of this.inbound.values()) controller.abort();
     this.inbound.clear();
+    this.stopReading.abort();
     this.resolveClosed();
   }
 
   private receive(line: string): void {
+    if (this.isClosed) return;
     let message: RpcMessage;
     try {
       message = decodeLine(line);

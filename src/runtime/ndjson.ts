@@ -47,14 +47,17 @@ function stripCarriageReturn(line: string): string {
   return line.endsWith('\r') ? line.slice(0, -1) : line;
 }
 
-/** Reads a byte stream line by line until it ends. */
+/** Reads a byte stream line by line until it ends or `stop` fires. */
 export async function readLines(
   input: ReadableStream<Uint8Array>,
   onLine: (line: string) => void,
+  stop?: AbortSignal,
 ): Promise<void> {
   const decoder = new TextDecoder();
   const splitter = new LineSplitter();
   const reader = input.getReader();
+  // a pending read keeps the process alive, so stop must release the reader
+  stop?.addEventListener('abort', () => void reader.cancel().catch(() => {}), { once: true });
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
