@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://light-launcher.dev/schema/plugin.schema.json",
+  "title": "Light Launcher plugin manifest",
+  "description": "The plugin.json file at the root of a .llplugin package.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "apiVersion", "minHost", "entry", "contributes", "permissions"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,39}$",
+      "description": "Unique plugin id: lowercase letters, digits and dashes."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+      "description": "Plugin version, semver."
+    },
+    "apiVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Major protocol version the plugin targets."
+    },
+    "minHost": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "description": "Oldest host version that can run this plugin, semver."
+    },
+    "entry": {
+      "type": "object",
+      "description": "Executable per platform, relative to the package root.",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "propertyNames": { "pattern": "^(linux|windows|mac)-(x64|arm64)$" },
+      "patternProperties": {
+        "^(linux|windows|mac)-(x64|arm64)$": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "contributes": { "$ref": "#/$defs/contributes" },
+    "permissions": { "$ref": "#/$defs/permissions" }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))(?!\\\\)",
+      "description": "Path inside the package. No leading slash and no '..' segments."
+    },
+    "contributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "settings": {
+          "type": "object",
+          "description": "Settings schema. Drives the auto-generated settings form.",
+          "additionalProperties": false,
+          "required": ["$ref"],
+          "properties": {
+            "$ref": { "$ref": "#/$defs/relativePath" }
+          }
+        },
+        "pages": { "type": "array", "items": { "$ref": "#/$defs/page" } },
+        "commands": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
+        "hooks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["onGameLaunch", "onGameExit", "onGameInstalled"] }
+        },
+        "launchAdapters": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
+        "importers": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
+        "themes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "path"],
+            "properties": {
+              "id": { "$ref": "#/$defs/itemId" },
+              "label": { "type": "string", "minLength": 1 },
+              "path": { "$ref": "#/$defs/relativePath" }
+            }
+          }
+        }
+      }
+    },
+    "itemId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+    },
+    "namedItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "$ref": "#/$defs/itemId" },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "capabilities"],
+      "properties": {
+        "id": { "$ref": "#/$defs/itemId" },
+        "label": { "type": "string", "minLength": 1 },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["browse", "auth", "updateCheck", "resolveFiles", "sync"] }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "path"],
+      "properties": {
+        "id": { "$ref": "#/$defs/itemId" },
+        "title": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(\\*\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)+$",
+            "description": "Host name, or *.host to allow subdomains."
+          }
+        },
+        "fs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^\\$[A-Z_]+$",
+            "description": "Named folder the host grants, such as $GAMES or $DOWNLOADS."
+          }
+        },
+        "secrets": { "type": "boolean", "default": false },
+        "browser": { "type": "boolean", "default": false },
+        "exec": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}
