@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import Ajv2020 from 'ajv/dist/2020';
 import protocol from '../schema/protocol.schema.json';
+import { settingsSchemaProblems } from '../src/schema/settings';
 
 const methods = protocol.methods as unknown as Record<string, { params?: object; result?: object }>;
 const notifications = protocol.notifications as unknown as Record<string, { params?: object }>;
@@ -84,6 +85,82 @@ describe('protocol schema', () => {
     expect(notificationMatches('settings.changed', { settings: 'x' })).toBe(false);
     expect(notificationMatches('settings.changed', {})).toBe(false);
     expect(notificationMatches('settings.changed', { settings: {}, extra: true })).toBe(false);
+  });
+});
+
+const stringField = { type: 'string', title: 'Text', default: 'x' };
+
+function settingsSchema(properties: Record<string, unknown>, extra: Record<string, unknown> = {}) {
+  return { type: 'object', additionalProperties: false, properties, ...extra };
+}
+
+describe('settings schema', () => {
+  test('accepts the supported keywords and extensions', () => {
+    const value = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      title: 'Demo settings',
+      additionalProperties: false,
+      required: ['name'],
+      properties: {
+        name: { ...stringField, minLength: 1, maxLength: 20, examples: ['demo'], 'x-ll-group': 'Site' },
+        count: { type: 'integer', title: 'Count', default: 1, minimum: 0, maximum: 10 },
+        ratio: { type: 'number', title: 'Ratio', default: 0.5 },
+        enabled: { type: 'boolean', title: 'Enabled', default: true, 'x-ll-advanced': true },
+        mode: { type: 'string', title: 'Mode', default: 'a', enum: ['a', 'b'] },
+        folder: { type: 'string', title: 'Folder', default: '', 'x-ll-widget': 'folder' },
+        files: { type: 'array', title: 'Files', default: [], items: { type: 'string' }, minItems: 0, maxItems: 5, uniqueItems: true },
+        tags: { type: 'array', title: 'Tags', default: [], items: { enum: ['a', 'b'] } },
+      },
+    };
+    expect(settingsSchemaProblems(value)).toEqual([]);
+  });
+
+  test('every property needs a title and a default', () => {
+    const noDefault = settingsSchema({ a: { type: 'string', title: 'A' } });
+    expect(settingsSchemaProblems(noDefault).some((p) => p.startsWith('/properties/a') && p.includes('default'))).toBe(true);
+    const noTitle = settingsSchema({ a: { type: 'string', default: 'x' } });
+    expect(settingsSchemaProblems(noTitle).some((p) => p.startsWith('/properties/a') && p.includes('title'))).toBe(true);
+  });
+
+  test('refuses keywords outside the supported subset', () => {
+    const withPattern = settingsSchema({ a: { ...stringField, pattern: '^x$' } });
+    expect(settingsSchemaProblems(withPattern).some((p) => p.includes('"pattern"'))).toBe(true);
+    const withNestedObject = settingsSchema({ a: { type: 'object', title: 'A', default: {} } });
+    expect(settingsSchemaProblems(withNestedObject).some((p) => p.includes('/properties/a/type'))).toBe(true);
+    expect(settingsSchemaProblems({ ...settingsSchema({}), definitions: {} }).some((p) => p.includes('"definitions"'))).toBe(true);
+  });
+
+  test('checks the extension values and where they may go', () => {
+    const badWidget = settingsSchema({ a: { ...stringField, 'x-ll-widget': 'picker' } });
+    expect(settingsSchemaProblems(badWidget).some((p) => p.includes('/properties/a/x-ll-widget'))).toBe(true);
+    const widgetOnNumber = settingsSchema({ a: { type: 'number', title: 'A', default: 1, 'x-ll-widget': 'folder' } });
+    expect(settingsSchemaProblems(widgetOnNumber).some((p) => p.includes('/properties/a/type'))).toBe(true);
+    const badAdvanced = settingsSchema({ a: { ...stringField, 'x-ll-advanced': false } });
+    expect(settingsSchemaProblems(badAdvanced).some((p) => p.includes('/properties/a/x-ll-advanced'))).toBe(true);
+    const badGroup = settingsSchema({ a: { ...stringField, 'x-ll-group': 3 } });
+    expect(settingsSchemaProblems(badGroup).some((p) => p.includes('/properties/a/x-ll-group'))).toBe(true);
+  });
+
+  test('array fields need a string or enum item type', () => {
+    const noItems = settingsSchema({ a: { type: 'array', title: 'A', default: [] } });
+    expect(settingsSchemaProblems(noItems).some((p) => p.startsWith('/properties/a') && p.includes('items'))).toBe(true);
+    const both = settingsSchema({ a: { type: 'array', title: 'A', default: [], items: { type: 'string', enum: ['a'] } } });
+    expect(settingsSchemaProblems(both).some((p) => p.startsWith('/properties/a/items'))).toBe(true);
+    const onString = settingsSchema({ a: { ...stringField, items: { type: 'string' } } });
+    expect(settingsSchemaProblems(onString).some((p) => p.includes('/properties/a/type'))).toBe(true);
+  });
+
+  test('the top level is an object with a properties map', () => {
+    expect(settingsSchemaProblems({ type: 'object', properties: {} })).toEqual([]);
+    expect(settingsSchemaProblems({ type: 'string', properties: {} }).length).toBeGreaterThan(0);
+    expect(settingsSchemaProblems({ type: 'object' }).length).toBeGreaterThan(0);
+    expect(settingsSchemaProblems(settingsSchema({}, { additionalProperties: true })).length).toBeGreaterThan(0);
+  });
+
+  test('a file that Ajv cannot compile is refused', () => {
+    const problems = settingsSchemaProblems({ ...settingsSchema({}), $schema: 'not-a-schema' });
+    expect(problems.some((p) => p.includes('not a valid JSON Schema'))).toBe(true);
   });
 });
 

@@ -51,6 +51,59 @@ Map each platform to a file inside the package. Keys: `linux-x64`, `linux-arm64`
 | `importers` | Import games from another launcher | `{ id, label }` |
 | `themes` | Colors and fonts | `{ id, label, path }` |
 
+### settings
+
+`contributes.settings.$ref` names a JSON Schema file inside the package, such as
+`settings.schema.json`. The launcher draws one field per top-level property. The file must
+match [schema/settings.schema.json](../schema/settings.schema.json). Every property needs a
+`title` and a `default`; `llp validate` checks both.
+
+The top level must be an object. `properties` holds the fields, `required` lists the fields
+the user must fill, and `additionalProperties` may only be `false`.
+
+Supported field types: `string`, `number`, `integer`, `boolean` and `array`. The UI does not
+draw nested objects, so keep every field at the top level.
+
+| Keyword | Applies to | What it does |
+|---|---|---|
+| `title` | every field | Label shown in the form. Required |
+| `description` | every field | Help text under the field |
+| `default` | every field | Starting value. Required |
+| `examples` | every field | Example values |
+| `enum` | string, number, integer, boolean | The allowed values |
+| `minimum`, `maximum` | number, integer | Smallest and largest value |
+| `minLength`, `maxLength` | string | Length limits |
+| `items` | array | The item type: `{ "type": "string" }` or `{ "enum": [...] }`. Required |
+| `minItems`, `maxItems` | array | Number of items |
+| `uniqueItems` | array | `true` when items must not repeat |
+| `required` | top level | Names of the fields the user must fill |
+| `additionalProperties` | top level | Only `false` is supported |
+
+The extensions below are optional:
+
+| Extension | Type | What it does |
+|---|---|---|
+| `x-ll-group` | string | Fields with the same group are drawn together |
+| `x-ll-widget` | `"folder"` or `"file"` | Adds a folder or file picker. String fields only |
+| `x-ll-advanced` | `true` | Hides the field under advanced settings |
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseUrl"],
+  "properties": {
+    "baseUrl": { "type": "string", "title": "Base URL", "default": "https://example.test" },
+    "browseFolder": { "type": "string", "title": "Folder", "default": "", "x-ll-widget": "folder" },
+    "useProxy": { "type": "boolean", "title": "Use a proxy", "default": false, "x-ll-advanced": true }
+  }
+}
+```
+
+> [!IMPORTANT]
+> The plugin is not restarted when settings change. Read them on each call with
+> `ctx.host.settings.get()`. See [settings.changed](protocol.md#settingschanged).
+
 ### commands
 
 | Field | Required | What it means |

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://light-launcher.dev/schema/settings.schema.json",
+  "title": "Light Launcher plugin settings schema",
+  "description": "The subset of JSON Schema that a plugin's settings file may use. The launcher draws one field per top-level property.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "properties"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "type": { "const": "object" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "examples": { "type": "array" },
+    "properties": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "required": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" },
+      "description": "Names of the top-level properties the user must fill."
+    },
+    "additionalProperties": { "const": false }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "default"],
+      "properties": {
+        "type": { "enum": ["string", "number", "integer", "boolean", "array"] },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "examples": { "type": "array" },
+        "default": {},
+        "enum": { "type": "array", "minItems": 1, "uniqueItems": true },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "items": { "$ref": "#/$defs/items" },
+        "minItems": { "type": "integer", "minimum": 0 },
+        "maxItems": { "type": "integer", "minimum": 0 },
+        "uniqueItems": { "type": "boolean" },
+        "x-ll-group": { "type": "string", "minLength": 1 },
+        "x-ll-widget": { "enum": ["folder", "file"] },
+        "x-ll-advanced": { "const": true }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["x-ll-widget"] },
+          "then": { "properties": { "type": { "const": "string" } } }
+        },
+        {
+          "if": { "required": ["minimum"] },
+          "then": { "properties": { "type": { "enum": ["number", "integer"] } } }
+        },
+        {
+          "if": { "required": ["maximum"] },
+          "then": { "properties": { "type": { "enum": ["number", "integer"] } } }
+        },
+        {
+          "if": { "required": ["minLength"] },
+          "then": { "properties": { "type": { "const": "string" } } }
+        },
+        {
+          "if": { "required": ["maxLength"] },
+          "then": { "properties": { "type": { "const": "string" } } }
+        },
+        {
+          "if": { "required": ["items"] },
+          "then": { "properties": { "type": { "const": "array" } } }
+        },
+        {
+          "if": { "required": ["minItems"] },
+          "then": { "properties": { "type": { "const": "array" } } }
+        },
+        {
+          "if": { "required": ["maxItems"] },
+          "then": { "properties": { "type": { "const": "array" } } }
+        },
+        {
+          "if": { "required": ["uniqueItems"] },
+          "then": { "properties": { "type": { "const": "array" } } }
+        },
+        {
+          "if": { "required": ["enum"] },
+          "then": { "properties": { "type": { "enum": ["string", "number", "integer", "boolean"] } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "array" } }, "required": ["type"] },
+          "then": { "required": ["items"] }
+        }
+      ]
+    },
+    "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "string" },
+        "enum": { "type": "array", "minItems": 1, "uniqueItems": true }
+      },
+      "oneOf": [{ "required": ["type"] }, { "required": ["enum"] }]
+    }
+  }
+}
