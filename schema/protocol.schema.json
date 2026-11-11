@@ -352,7 +352,12 @@
           "url": { "type": "string" },
           "headers": { "$ref": "#/$defs/headers" },
           "filename": { "type": "string" },
-          "size": { "type": "integer", "minimum": 0 }
+          "size": { "type": "integer", "minimum": 0 },
+          "root": { "enum": ["downloads", "games"] },
+          "subfolder": { "$ref": "#/$defs/folderPath" },
+          "install": { "type": "boolean" },
+          "installSubfolder": { "$ref": "#/$defs/folderPath" },
+          "deleteArchive": { "type": "boolean" }
         },
         "additionalProperties": false
       }

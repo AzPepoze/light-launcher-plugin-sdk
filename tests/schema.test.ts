@@ -22,10 +22,33 @@ function notificationMatches(notification: string, value: unknown): boolean {
 }
 
 describe('protocol schema', () => {
-  test('prepareDownload may report a filename and size', () => {
+  test('prepareDownload may report a filename, size and download hints', () => {
     const base = { url: 'https://cdn.test/a.zip', headers: {} };
     expect(matches('source.prepareDownload', 'result', { ...base, filename: 'a.zip', size: 10 })).toBe(true);
     expect(matches('source.prepareDownload', 'result', { ...base, size: -1 })).toBe(false);
+
+    const hints = {
+      root: 'games',
+      subfolder: 'Team/Demo 2 (v1)',
+      install: true,
+      installSubfolder: 'Pack',
+      deleteArchive: false,
+    };
+    expect(matches('source.prepareDownload', 'result', { ...base, ...hints })).toBe(true);
+    expect(matches('source.prepareDownload', 'result', base)).toBe(true);
+  });
+
+  test('prepareDownload refuses unsafe folders and bad hint values', () => {
+    const base = { url: 'https://cdn.test/a.zip', headers: {} };
+    const unsafe = ['..', 'a/../b', './a', '/etc', 'C:/games', 'a\\b', 'a:b', 'a//b', 'a/', 'a/.', ''];
+    for (const subfolder of unsafe) {
+      expect(matches('source.prepareDownload', 'result', { ...base, subfolder })).toBe(false);
+      expect(matches('source.prepareDownload', 'result', { ...base, installSubfolder: subfolder })).toBe(false);
+    }
+    expect(matches('source.prepareDownload', 'result', { ...base, root: 'music' })).toBe(false);
+    expect(matches('source.prepareDownload', 'result', { ...base, install: 'yes' })).toBe(false);
+    expect(matches('source.prepareDownload', 'result', { ...base, deleteArchive: 1 })).toBe(false);
+    expect(matches('source.prepareDownload', 'result', { ...base, where: '/tmp' })).toBe(false);
   });
 
   test('browser.assist takes a token and may return headers', () => {

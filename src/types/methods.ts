@@ -75,6 +75,16 @@ export interface PrepareDownloadResult {
   filename?: string;
   /** the size in bytes, when the plugin knows it */
   size?: number;
+  /** 'downloads' (default) or 'games'. 'games' needs the $GAMES fs grant. */
+  root?: DownloadRoot;
+  /** Relative folder under root, such as 'Team/Demo'. */
+  subfolder?: string;
+  /** Install the archive after the download. Needs the $GAMES fs grant. */
+  install?: boolean;
+  /** Relative folder under the games folder for the installed game. Needs install. */
+  installSubfolder?: string;
+  /** Delete the archive after a successful install. Omit to use the launcher setting. Needs install. */
+  deleteArchive?: boolean;
 }
 
 export interface CheckUpdateParams {
