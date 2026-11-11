@@ -43,7 +43,7 @@ Map each platform to a file inside the package. Keys: `linux-x64`, `linux-arm64`
 
 | Key | What it adds | Shape |
 |---|---|---|
-| `sources` | A game source: search, fetch, files, updates | `{ id, label, tile?, capabilities[] }` |
+| `sources` | A game source: search, fetch, files, updates | `{ id, label, tile?, sidebar?, capabilities[] }` |
 | `settings` | A settings form, built from a JSON Schema file | `{ "$ref": "settings.schema.json" }` |
 | `pages` | A page in the app | `{ id, title, path }` |
 | `commands` | An action in the command palette | `{ id, label, method? }` |
@@ -127,6 +127,7 @@ Source capabilities:
 | Capability | The launcher may call |
 |---|---|
 | `browse` | `source.search`, `source.fetchGame` |
+| `browse:filters` | `source.browse`, `source.listFilters`. Needs a `sidebar`. See [Sidebar](sidebar.md) |
 | `auth` | `source.authStatus`, `source.setCredential`, `source.clearCredential` |
 | `updateCheck` | `source.checkUpdate` |
 | `resolveFiles` | `source.resolveFiles`, `source.prepareDownload` |

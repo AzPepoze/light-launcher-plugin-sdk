@@ -57,6 +57,7 @@ new plugin only needs step 2. If you move the SDK folder, run step 1 again.
 | [Protocol](docs/protocol.md) | Know every message the launcher and plugin send |
 | [Download hints](docs/download-hints.md) | Save downloads in the right folder, install them, and build safe folder names |
 | [List games](docs/list-games.md) | Show the games a user owns or follows, page through them, and pick the card shape |
+| [Sidebar](docs/sidebar.md) | Add search, toggles, choices, tags and a sort beside a source's list |
 
 ## Commands
 

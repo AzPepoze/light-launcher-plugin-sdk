@@ -50,6 +50,8 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 | `source.checkUpdate` | `source`, `game` | `update` or `null` |
 | `source.sync` | `source` | `games[]` or `SyncStatus` (see below) |
 | `source.listGames` | `source`, `scope`, `cursor?`, `limit` | `games[]`, `nextCursor?`, `total?` (see [List games](list-games.md)) |
+| `source.browse` | `source`, `query?`, `filters?`, `sort?`, `order?`, `cursor?`, `limit` | `games[]`, `nextCursor?`, `total?` (see [Sidebar](sidebar.md)) |
+| `source.listFilters` | `source`, `group`, `query?`, `limit` | `options[]` (see [Sidebar](sidebar.md)) |
 | `source.authStatus` | `source` | `AuthState` |
 | `source.setCredential` | `source`, `value` | `AuthState` |
 | `source.clearCredential` | `source` | `AuthState` |
@@ -276,6 +278,7 @@ calls `handler` with the new settings. The listener is removed when the request 
 | -32004 | Rate limited | The site returned 429 |
 | -32005 | Remote error | The site returned an error the plugin did not allow |
 | -32006 | Not modified | The site answered 304. Keep the old data |
+| -32007 | `invalid_cursor` | The cursor does not match this query, filters, sort and order |
 
 ## Example
 
