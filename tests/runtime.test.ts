@@ -209,6 +209,46 @@ describe('settings round trip', () => {
   });
 });
 
+describe('settings.changed notification', () => {
+  test('ctx.onSettingsChanged gets the new settings while the request runs, then stops', async () => {
+    let started = false;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const seen: Record<string, unknown>[] = [];
+    const mem = memoryIo();
+    const done = servePlugin(
+      {
+        'source.search': async (_params, ctx) => {
+          ctx.onSettingsChanged((settings) => seen.push(settings));
+          started = true;
+          await gate;
+          return { games: [] };
+        },
+      },
+      mem.io,
+    );
+
+    mem.send('{"jsonrpc":"2.0","id":1,"method":"source.search","params":{"source":"x"}}\n');
+    await until(() => started);
+    mem.send('{"jsonrpc":"2.0","method":"settings.changed","params":{"settings":{"baseUrl":"https://new.test"}}}\n');
+    await until(() => seen.length === 1);
+    expect(seen).toEqual([{ baseUrl: 'https://new.test' }]);
+
+    release();
+    await until(() => mem.outgoing().length === 1);
+    expect(mem.outgoing()[0]).toEqual({ jsonrpc: '2.0', id: 1, result: { games: [] } });
+
+    mem.send('{"jsonrpc":"2.0","method":"settings.changed","params":{"settings":{"baseUrl":"https://later.test"}}}\n');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(seen.length).toBe(1);
+
+    mem.end();
+    await done;
+  });
+});
+
 describe('param validation', () => {
   function startValidated(handlers: PluginHandlers) {
     const mem = memoryIo();

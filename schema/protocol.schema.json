@@ -708,6 +708,19 @@
       }
     },
 
+    "settings.changed": {
+      "direction": "host-to-plugin",
+      "description": "The user saved settings. Defaults are already applied. The plugin is not restarted, so read the new settings on the next call.",
+      "params": {
+        "type": "object",
+        "required": ["settings"],
+        "properties": {
+          "settings": { "type": "object", "description": "The full settings object, with the schema defaults applied." }
+        },
+        "additionalProperties": false
+      }
+    },
+
     "progress": {
       "direction": "plugin-to-host",
       "description": "Progress for the host request with this id.",

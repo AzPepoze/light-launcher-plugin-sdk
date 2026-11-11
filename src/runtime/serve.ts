@@ -1,12 +1,17 @@
 import { paramProblems } from '../schema/params';
-import type { HostMethodName, HostMethods, HostNotifications } from '../types/methods';
+import type { HostMethodName, HostMethods, HostNotifications, SettingsChangedParams } from '../types/methods';
 import { ErrorCode, RpcFailure } from '../types/protocol';
 import { createHostClient, type HostClient } from './host-client';
 import { RpcPeer, type CallContext, type NotificationHandler, type RequestHandler } from './peer';
 
+/** Called with the new settings when the launcher sends settings.changed. */
+export type SettingsChangedHandler = (settings: Record<string, unknown>) => void;
+
 /** Handler context: the call context plus the typed host client. */
 export interface PluginContext extends CallContext {
   host: HostClient;
+  /** Listens while this request runs. The listener is dropped when the handler answers. */
+  onSettingsChanged(handler: SettingsChangedHandler): void;
 }
 
 export type PluginHandler<M extends HostMethodName> = (
@@ -60,10 +65,11 @@ export function servePlugin(
   notifications: PluginNotificationHandlers = {},
   options: ServeOptions = {},
 ): Promise<void> {
+  const settingsListeners = new Set<SettingsChangedHandler>();
   const peer = new RpcPeer({
     write: io.write,
-    requests: bindHandlers(handlers, () => host, options.validateParams ?? false),
-    notifications: notifications as Record<string, NotificationHandler>,
+    requests: bindHandlers(handlers, () => host, options.validateParams ?? false, settingsListeners),
+    notifications: withSettingsChanged(notifications, settingsListeners),
     endAfter: 'shutdown',
   });
   const host = createHostClient(peer);
@@ -75,10 +81,25 @@ type AnyHandler = (params: never, ctx: PluginContext) => unknown;
 /** Shutdown needs no work from most plugins, so the runtime answers it unless the plugin does. */
 const defaultHandlers: PluginHandlers = { shutdown: () => null };
 
+function withSettingsChanged(
+  handlers: PluginNotificationHandlers,
+  listeners: Set<SettingsChangedHandler>,
+): Record<string, NotificationHandler> {
+  return {
+    ...(handlers as Record<string, NotificationHandler>),
+    'settings.changed': (params) => {
+      const settings = (params as SettingsChangedParams | undefined)?.settings ?? {};
+      for (const listener of [...listeners]) listener(settings);
+      handlers['settings.changed']?.(params as SettingsChangedParams);
+    },
+  };
+}
+
 function bindHandlers(
   handlers: object,
   host: () => HostClient,
   validateParams: boolean,
+  settingsListeners: Set<SettingsChangedHandler>,
 ): Record<string, RequestHandler> {
   const bound: Record<string, RequestHandler> = {};
   const all = { ...defaultHandlers, ...handlers };
@@ -86,7 +107,31 @@ function bindHandlers(
     if (!handler) continue;
     bound[method] = (params, ctx) => {
       if (validateParams) requireValidParams(method, params);
-      return handler(params as never, { ...ctx, host: host() });
+      const owned = new Set<SettingsChangedHandler>();
+      const release = () => {
+        for (const listener of owned) settingsListeners.delete(listener);
+        owned.clear();
+      };
+      const pluginCtx: PluginContext = {
+        ...ctx,
+        host: host(),
+        onSettingsChanged: (listener) => {
+          owned.add(listener);
+          settingsListeners.add(listener);
+        },
+      };
+      try {
+        const result = handler(params as never, pluginCtx);
+        if (result instanceof Promise) {
+          result.then(release, release);
+          return result;
+        }
+        release();
+        return result;
+      } catch (err) {
+        release();
+        throw err;
+      }
     };
   }
   return bound;

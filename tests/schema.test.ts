@@ -3,12 +3,20 @@ import Ajv2020 from 'ajv/dist/2020';
 import protocol from '../schema/protocol.schema.json';
 
 const methods = protocol.methods as unknown as Record<string, { params?: object; result?: object }>;
+const notifications = protocol.notifications as unknown as Record<string, { params?: object }>;
 const ajv = new Ajv2020({ allErrors: true });
 
 /** True when value matches the named part of a method, such as its result. */
 function matches(method: string, part: 'params' | 'result', value: unknown): boolean {
   const schema = methods[method]?.[part];
   if (!schema) throw new Error(`no ${part} schema for ${method}`);
+  return ajv.compile({ ...schema, $defs: protocol.$defs })(value);
+}
+
+/** True when value matches the params of a notification. */
+function notificationMatches(notification: string, value: unknown): boolean {
+  const schema = notifications[notification]?.params;
+  if (!schema) throw new Error(`no params schema for ${notification}`);
   return ajv.compile({ ...schema, $defs: protocol.$defs })(value);
 }
 
@@ -68,6 +76,14 @@ describe('protocol schema', () => {
     expect(matches('library.upsert', 'result', { upserted: 2, ids: [7, 8] })).toBe(true);
     expect(matches('library.upsert', 'result', { upserted: 1 })).toBe(false);
     expect(matches('library.upsert', 'result', { upserted: 1, ids: ['7'] })).toBe(false);
+  });
+
+  test('settings.changed carries the full settings object and no other keys', () => {
+    expect(notificationMatches('settings.changed', { settings: { baseUrl: 'https://demo.test' } })).toBe(true);
+    expect(notificationMatches('settings.changed', { settings: {} })).toBe(true);
+    expect(notificationMatches('settings.changed', { settings: 'x' })).toBe(false);
+    expect(notificationMatches('settings.changed', {})).toBe(false);
+    expect(notificationMatches('settings.changed', { settings: {}, extra: true })).toBe(false);
   });
 });
 

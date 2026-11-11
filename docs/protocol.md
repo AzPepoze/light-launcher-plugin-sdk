@@ -22,7 +22,7 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 
 | Direction | Methods |
 |---|---|
-| Launcher to plugin | `initialize`, `shutdown`, `source.*` |
+| Launcher to plugin | `initialize`, `shutdown`, `source.*`, `settings.changed` |
 | Plugin to launcher | `http.request`, `secrets.*`, `storage.*`, `downloads.enqueue`, `extract`, `library.upsert`, `settings.get`, `browser.assist` |
 | Either way (notifications) | `cancel`, `progress`, `log`, `notify`, `browser.progress`, `browser.waiting` |
 
@@ -216,9 +216,24 @@ is the id of the request being answered, so you can use it as the token.
 | `cancel` | launcher | `id`: the request to stop |
 | `browser.progress` | launcher | `token`, `percent` (0 to 100), `message?` |
 | `browser.waiting` | launcher | `token`, `message`: the user must act, such as press a download button |
+| `settings.changed` | launcher | `settings`: the new settings object |
 | `progress` | plugin | `id`, `done?`, `total?`, `message?` |
 | `log` | plugin | `level`, `message`, `data?` |
 | `notify` | plugin | `level`, `message` |
+
+### settings.changed
+
+The launcher sends `settings.changed` after the user saves the plugin's settings. The
+schema defaults are already applied, so `settings` has the same shape as the result of
+`settings.get`.
+
+```json
+{"jsonrpc":"2.0","method":"settings.changed","params":{"settings":{"baseUrl":"https://demo.example","useProxy":false}}}
+```
+
+The plugin is **not** restarted. Settings can change between calls, so read them on each
+call with `ctx.host.settings.get()`. While a request is running, `ctx.onSettingsChanged(handler)`
+calls `handler` with the new settings. The listener is removed when the request answers.
 
 
 ## Cancel and timeouts

@@ -318,10 +318,16 @@ export interface BrowserWaitingParams {
   message: string;
 }
 
+/** Sent by the launcher after the user saves settings. Defaults are already applied. */
+export interface SettingsChangedParams {
+  settings: Record<string, unknown>;
+}
+
 export interface HostNotifications {
   cancel: CancelParams;
   'browser.progress': BrowserProgressParams;
   'browser.waiting': BrowserWaitingParams;
+  'settings.changed': SettingsChangedParams;
 }
 
 export interface PluginNotifications {
