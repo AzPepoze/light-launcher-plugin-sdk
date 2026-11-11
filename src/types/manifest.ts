@@ -68,6 +68,8 @@ export interface PluginManifest {
   description?: string;
   /** http or https URL */
   homepage?: string;
+  /** GitHub repository for the planned updater, such as github:owner/repo */
+  repository?: string;
   /** semver */
   version: string;
   /** major protocol version the plugin targets */

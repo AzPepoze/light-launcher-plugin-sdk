@@ -125,6 +125,15 @@ describe('manifest validation', () => {
     expect(manifestProblems({ ...validManifest(), author: '' }).length).toBeGreaterThan(0);
     expect(manifestProblems({ ...validManifest(), description: '' }).length).toBeGreaterThan(0);
   });
+
+  test('repository is an optional github:owner/repo string', () => {
+    expect(manifestProblems({ ...validManifest(), repository: 'github:owner/repo' })).toEqual([]);
+    expect(manifestProblems({ ...validManifest(), repository: 'github:owner/repo.js' })).toEqual([]);
+    for (const repository of ['https://github.com/owner/repo', 'github:owner', 'github:owner/repo/extra', '']) {
+      expect(manifestProblems({ ...validManifest(), repository }).some((p) => p.startsWith('/repository'))).toBe(true);
+    }
+    expect(manifestProblems({ ...validManifest(), repository: 42 }).some((p) => p.startsWith('/repository'))).toBe(true);
+  });
 });
 
 interface SettingsDocument {
