@@ -35,6 +35,11 @@ function memorySink(): LineSink & { text: string } {
 
 const quietLog = () => createLogger('test', memorySink(), false);
 
+function captureLog() {
+  const sink = memorySink();
+  return { log: createLogger('test', sink, false), text: () => sink.text };
+}
+
 function validManifest(): PluginManifest {
   return {
     id: 'demo-site',
@@ -119,6 +124,100 @@ describe('manifest validation', () => {
   test('rejects empty author and description', () => {
     expect(manifestProblems({ ...validManifest(), author: '' }).length).toBeGreaterThan(0);
     expect(manifestProblems({ ...validManifest(), description: '' }).length).toBeGreaterThan(0);
+  });
+});
+
+interface SettingsDocument {
+  type: unknown;
+  additionalProperties?: unknown;
+  properties: Record<string, Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+function validSettings(): SettingsDocument {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      baseUrl: { type: 'string', title: 'Base URL', default: 'https://demo.test' },
+    },
+  };
+}
+
+function writePluginWithSettings(dir: string, settings: unknown): void {
+  writePlugin(dir, { ...validManifest(), contributes: { settings: { $ref: 'settings.schema.json' } } });
+  const text = typeof settings === 'string' ? settings : JSON.stringify(settings);
+  fs.writeFileSync(path.join(dir, 'settings.schema.json'), text);
+}
+
+function checkSettings(settings: unknown, name: string): { code: number; text: string } {
+  const dir = path.join(workdir, name);
+  writePluginWithSettings(dir, settings);
+  const { log, text } = captureLog();
+  return { code: validateCommand(dir, log), text: text() };
+}
+
+describe('settings schema validation', () => {
+  test('passes for a settings schema in the supported subset', () => {
+    const dir = path.join(workdir, 'settings-ok');
+    writePluginWithSettings(dir, validSettings());
+    expect(validateCommand(dir, quietLog())).toBe(0);
+  });
+
+  test('fails when the settings file is missing', () => {
+    const dir = path.join(workdir, 'settings-missing');
+    writePlugin(dir, { ...validManifest(), contributes: { settings: { $ref: 'settings.schema.json' } } });
+    const { log, text } = captureLog();
+    expect(validateCommand(dir, log)).toBe(1);
+    expect(text()).toContain('settings.schema.json');
+    expect(text()).toContain('not found');
+  });
+
+  test('fails when the settings file is not JSON', () => {
+    const { code, text } = checkSettings('{', 'settings-bad-json');
+    expect(code).toBe(1);
+    expect(text).toContain('not valid JSON');
+  });
+
+  test('fails when the settings file is not a valid JSON Schema', () => {
+    const { code, text } = checkSettings({ ...validSettings(), $schema: 'not-a-schema' }, 'settings-bad-schema');
+    expect(code).toBe(1);
+    expect(text).toContain('not a valid JSON Schema');
+  });
+
+  test('fails on an unsupported keyword and names the JSON path', () => {
+    const settings = validSettings();
+    settings.properties.baseUrl.pattern = '^https://';
+    const { code, text } = checkSettings(settings, 'settings-unsupported-keyword');
+    expect(code).toBe(1);
+    expect(text).toContain('/properties/baseUrl');
+    expect(text).toContain('"pattern"');
+  });
+
+  test('fails when a property has no default', () => {
+    const settings = validSettings();
+    delete settings.properties.baseUrl.default;
+    const { code, text } = checkSettings(settings, 'settings-no-default');
+    expect(code).toBe(1);
+    expect(text).toContain('/properties/baseUrl');
+    expect(text).toContain('default');
+  });
+
+  test('fails when a property has no title', () => {
+    const settings = validSettings();
+    delete settings.properties.baseUrl.title;
+    const { code, text } = checkSettings(settings, 'settings-no-title');
+    expect(code).toBe(1);
+    expect(text).toContain('/properties/baseUrl');
+    expect(text).toContain('title');
+  });
+
+  test('fails on an unsupported extension value', () => {
+    const settings = validSettings();
+    settings.properties.baseUrl['x-ll-widget'] = 'picker';
+    const { code, text } = checkSettings(settings, 'settings-bad-extension');
+    expect(code).toBe(1);
+    expect(text).toContain('/properties/baseUrl/x-ll-widget');
   });
 });
 
