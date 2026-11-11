@@ -149,7 +149,7 @@ The launcher checks the permission in the manifest before it runs a service.
 | `storage.set` | none | `key`, `value` | `null` |
 | `downloads.enqueue` | none, or `fs` for `$GAMES` (see below) | `url`, `filename`, `title?`, `size?`, `headers?`, `gameId?`, `root?`, `subfolder?`, `install?`, `installSubfolder?`, `deleteArchive?` | `id` |
 | `extract` | `fs` | `archive`, `destination` | `destination` |
-| `library.upsert` | none | `games[]` | `upserted` |
+| `library.upsert` | none | `games[]` | `upserted`, `ids` |
 | `settings.get` | none | none | `settings` |
 | `browser.assist` | `browser` | `url`, `timeoutMs?`, `token?` | `capturedUrl`, `filename?`, `size?`, `headers?` |
 
@@ -167,7 +167,7 @@ Every option except `url` and `filename` is optional. Without them, the file goe
 | `install` | Install the archive after the download finishes |
 | `installSubfolder` | Folder under the games folder for the game. Needs `install` |
 | `deleteArchive` | Delete the archive after a good install. Leave it out to use the launcher setting. Needs `install` |
-| `gameId` | Library id of the game, from `library.upsert` |
+| `gameId` | Library id of the game. `library.upsert` returns the ids in `ids` |
 
 > [!IMPORTANT]
 > `root: "games"` and `install: true` need `"$GAMES"` in the plugin's `fs` permission. Otherwise the call fails with a permission error.

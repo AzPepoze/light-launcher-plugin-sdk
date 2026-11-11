@@ -46,6 +46,8 @@ export interface HostClient {
   library: {
     /** resolves with the number of games written */
     upsert(games: GameDTO[]): Promise<number>;
+    /** resolves with the library id of each game, in the order sent */
+    upsertIds(games: GameDTO[]): Promise<number[]>;
   };
   settings: {
     get(): Promise<Record<string, unknown>>;
@@ -88,6 +90,7 @@ export function createHostClient(transport: HostTransport): HostClient {
     extract: async (params) => (await call('extract', params)).destination,
     library: {
       upsert: async (games) => (await call('library.upsert', { games })).upserted,
+      upsertIds: async (games) => (await call('library.upsert', { games })).ids,
     },
     settings: {
       get: async () => (await call('settings.get', {}))?.settings ?? {},

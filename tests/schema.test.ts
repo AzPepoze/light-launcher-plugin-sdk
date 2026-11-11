@@ -63,6 +63,12 @@ describe('protocol schema', () => {
     expect(matches('downloads.enqueue', 'params', { ...base, gameId: -1 })).toBe(false);
     expect(matches('downloads.enqueue', 'params', { ...base, where: '/tmp' })).toBe(false);
   });
+
+  test('library.upsert result lists the id of each game', () => {
+    expect(matches('library.upsert', 'result', { upserted: 2, ids: [7, 8] })).toBe(true);
+    expect(matches('library.upsert', 'result', { upserted: 1 })).toBe(false);
+    expect(matches('library.upsert', 'result', { upserted: 1, ids: ['7'] })).toBe(false);
+  });
 });
 
 function initializeWith(grantedPermissions: object) {

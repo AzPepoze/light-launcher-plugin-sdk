@@ -618,8 +618,11 @@
       },
       "result": {
         "type": "object",
-        "required": ["upserted"],
-        "properties": { "upserted": { "type": "integer", "minimum": 0 } },
+        "required": ["upserted", "ids"],
+        "properties": {
+          "upserted": { "type": "integer", "minimum": 0 },
+          "ids": { "type": "array", "items": { "type": "integer" } }
+        },
         "additionalProperties": false
       }
     },

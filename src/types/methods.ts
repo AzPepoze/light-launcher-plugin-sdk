@@ -237,6 +237,8 @@ export interface LibraryUpsertParams {
 
 export interface LibraryUpsertResult {
   upserted: number;
+  /** Library id of each game, in the order sent. Pass one as gameId to downloads.enqueue. */
+  ids: number[];
 }
 
 export interface SettingsGetResult {
