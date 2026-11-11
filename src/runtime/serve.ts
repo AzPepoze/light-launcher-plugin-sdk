@@ -108,7 +108,9 @@ function bindHandlers(
     bound[method] = (params, ctx) => {
       if (validateParams) requireValidParams(method, params);
       const owned = new Set<SettingsChangedHandler>();
+      let active = true;
       const release = () => {
+        active = false;
         for (const listener of owned) settingsListeners.delete(listener);
         owned.clear();
       };
@@ -116,6 +118,7 @@ function bindHandlers(
         ...ctx,
         host: host(),
         onSettingsChanged: (listener) => {
+          if (!active) return;
           owned.add(listener);
           settingsListeners.add(listener);
         },
