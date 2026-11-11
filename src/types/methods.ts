@@ -134,6 +134,55 @@ export interface ListGamesResult {
   total?: number;
 }
 
+/** A chosen value for one sidebar group: text, a list of values, or a single switch. */
+export type FilterValue = string | string[] | boolean;
+
+export type BrowseOrder = 'asc' | 'desc';
+
+export interface BrowseParams {
+  source: string;
+  /** Text from the search group */
+  query?: string;
+  /** Keyed by sidebar group id. Unknown ids are ignored. */
+  filters?: Record<string, FilterValue>;
+  /** The value of the chosen sort option */
+  sort?: string;
+  order?: BrowseOrder;
+  /** Opaque cursor from the previous page's nextCursor. Missing for the first page. */
+  cursor?: string;
+  /** 1 to 100 games per page */
+  limit: number;
+}
+
+export interface BrowseResult {
+  games: GameDTO[];
+  /** Pass as cursor to get the next page. Missing on the last page. */
+  nextCursor?: string;
+  /** How many games match the filters, when the source knows it */
+  total?: number;
+}
+
+export interface FilterOption {
+  value: string;
+  label: string;
+  /** Games with this value in the whole source */
+  count?: number;
+}
+
+export interface ListFiltersParams {
+  source: string;
+  /** Id of a dynamic sidebar group */
+  group: string;
+  /** Text typed in the group's filter box */
+  query?: string;
+  /** 1 to 200 options */
+  limit: number;
+}
+
+export interface ListFiltersResult {
+  options: FilterOption[];
+}
+
 export interface AuthStatusParams {
   source: string;
 }
@@ -163,6 +212,10 @@ export interface HostMethods {
   'source.sync': { params: SyncParams; result: SyncResult };
   /** Needs the listGames capability. */
   'source.listGames': { params: ListGamesParams; result: ListGamesResult };
+  /** Needs the browse:filters capability. */
+  'source.browse': { params: BrowseParams; result: BrowseResult };
+  /** Needs the browse:filters capability. */
+  'source.listFilters': { params: ListFiltersParams; result: ListFiltersResult };
   /** The plugin validates the credential, then saves it with secrets.set. */
   'source.setCredential': { params: SetCredentialParams; result: AuthState };
   'source.authStatus': { params: AuthStatusParams; result: AuthState };

@@ -45,6 +45,8 @@ export const ErrorCode = {
   RateLimited: -32004,
   RemoteError: -32005,
   NotModified: -32006,
+  /** The message is "invalid_cursor". The cursor is not one this query issued. */
+  InvalidCursor: -32007,
 } as const;
 
 export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];

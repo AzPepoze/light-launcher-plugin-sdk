@@ -56,7 +56,7 @@
 
     "errorCodes": {
       "description": "Standard JSON-RPC codes plus Light Launcher codes in the -32000 range.",
-      "enum": [-32700, -32600, -32601, -32602, -32603, -32001, -32002, -32003, -32004, -32005, -32006]
+      "enum": [-32700, -32600, -32601, -32602, -32603, -32001, -32002, -32003, -32004, -32005, -32006, -32007]
     },
 
     "platform": {
@@ -126,7 +126,11 @@
         "updateCheck": { "type": "boolean" },
         "resolveFiles": { "type": "boolean" },
         "versioned": { "type": "boolean" },
-        "listGames": { "type": "boolean", "description": "Optional. true when the source implements source.listGames." }
+        "listGames": { "type": "boolean", "description": "Optional. true when the source implements source.listGames." },
+        "browse:filters": {
+          "type": "boolean",
+          "description": "Optional. true when the source implements source.browse and source.listFilters."
+        }
       },
       "additionalProperties": false
     },
@@ -152,6 +156,26 @@
         "status": { "$ref": "#/$defs/gameStatus" },
         "updatedAt": { "type": ["string", "null"] },
         "extra": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "filterValue": {
+      "description": "A value for one sidebar group: text for a select, a list of values for a multi or toggles, true or false for a single switch.",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "boolean" }
+      ]
+    },
+
+    "filterOption": {
+      "type": "object",
+      "required": ["value", "label"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 0, "description": "Games with this value in the whole source." }
       },
       "additionalProperties": false
     },
@@ -423,6 +447,63 @@
           "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } },
           "nextCursor": { "type": "string" },
           "total": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "source.browse": {
+      "direction": "host-to-plugin",
+      "description": "One page of the source list with the sidebar filters, sort and order applied. Needs the browse:filters capability. Read-only: the launcher never saves these games to the user's library. A cursor works only with the same query, filters, sort and order. Otherwise answer with error -32007.",
+      "params": {
+        "type": "object",
+        "required": ["source", "limit"],
+        "properties": {
+          "source": { "type": "string" },
+          "query": { "type": "string" },
+          "filters": {
+            "type": "object",
+            "description": "Keyed by sidebar group id. A group id the plugin does not know is ignored.",
+            "additionalProperties": { "$ref": "#/$defs/filterValue" }
+          },
+          "sort": { "type": "string", "description": "The value of the chosen sort option." },
+          "order": { "enum": ["asc", "desc"] },
+          "cursor": { "type": "string" },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100 }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["games"],
+        "properties": {
+          "games": { "type": "array", "items": { "$ref": "#/$defs/gameDTO" } },
+          "nextCursor": { "type": "string" },
+          "total": { "type": "integer", "minimum": 0, "description": "How many games match the filters, when the source knows it." }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "source.listFilters": {
+      "direction": "host-to-plugin",
+      "description": "The options of one dynamic sidebar group, such as tags. Needs the browse:filters capability. Counts cover the whole source, not the current filters.",
+      "params": {
+        "type": "object",
+        "required": ["source", "group", "limit"],
+        "properties": {
+          "source": { "type": "string" },
+          "group": { "type": "string", "minLength": 1, "description": "The id of a dynamic sidebar group." },
+          "query": { "type": "string", "description": "Text typed in the group's filter box." },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 }
+        },
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "required": ["options"],
+        "properties": {
+          "options": { "type": "array", "items": { "$ref": "#/$defs/filterOption" } }
         },
         "additionalProperties": false
       }

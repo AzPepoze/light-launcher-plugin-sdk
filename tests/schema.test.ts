@@ -165,6 +165,83 @@ describe('source.listGames schema', () => {
   });
 });
 
+describe('source.browse schema', () => {
+  const params = { source: 'site', limit: 60 };
+  const game = { source: 'site', sourceId: '1', url: 'https://site.test/1', title: 'Game' };
+
+  test('accepts a first page with filters, sort and order, and the limit bounds', () => {
+    expect(matches('source.browse', 'params', params)).toBe(true);
+    expect(
+      matches('source.browse', 'params', {
+        ...params,
+        query: 'pixel',
+        filters: { tags: ['rpg', 'horror'], engine: 'unity', installed: true },
+        sort: 'date',
+        order: 'desc',
+      }),
+    ).toBe(true);
+    expect(matches('source.browse', 'params', { ...params, cursor: 'c-2', limit: 1 })).toBe(true);
+    expect(matches('source.browse', 'params', { ...params, limit: 100 })).toBe(true);
+  });
+
+  test('refuses a limit outside 1 to 100, a bad order, a bad filter value and unknown keys', () => {
+    expect(matches('source.browse', 'params', { ...params, limit: 0 })).toBe(false);
+    expect(matches('source.browse', 'params', { ...params, limit: 101 })).toBe(false);
+    expect(matches('source.browse', 'params', { source: 'site' })).toBe(false);
+    expect(matches('source.browse', 'params', { ...params, order: 'up' })).toBe(false);
+    expect(matches('source.browse', 'params', { ...params, filters: { tags: [1] } })).toBe(false);
+    expect(matches('source.browse', 'params', { ...params, filters: { year: 2020 } })).toBe(false);
+    expect(matches('source.browse', 'params', { ...params, page: 2 })).toBe(false);
+  });
+
+  test('accepts a result with or without nextCursor and total', () => {
+    expect(matches('source.browse', 'result', { games: [game] })).toBe(true);
+    expect(matches('source.browse', 'result', { games: [], nextCursor: 'c-2', total: 40 })).toBe(true);
+    expect(matches('source.browse', 'result', { games: [], total: -1 })).toBe(false);
+    expect(matches('source.browse', 'result', { games: [{ title: 'no source' }] })).toBe(false);
+  });
+});
+
+describe('source.listFilters schema', () => {
+  const params = { source: 'site', group: 'tags', limit: 50 };
+
+  test('accepts a group, a filter box text and the limit bounds', () => {
+    expect(matches('source.listFilters', 'params', params)).toBe(true);
+    expect(matches('source.listFilters', 'params', { ...params, query: 'hor' })).toBe(true);
+    expect(matches('source.listFilters', 'params', { ...params, limit: 200 })).toBe(true);
+    expect(matches('source.listFilters', 'params', { ...params, limit: 201 })).toBe(false);
+    expect(matches('source.listFilters', 'params', { ...params, group: '' })).toBe(false);
+    expect(matches('source.listFilters', 'params', { source: 'site', limit: 5 })).toBe(false);
+  });
+
+  test('accepts options with and without a count, and refuses a bad option', () => {
+    const options = [{ value: 'horror', label: 'Horror', count: 12 }, { value: 'rpg', label: 'RPG' }];
+    expect(matches('source.listFilters', 'result', { options })).toBe(true);
+    expect(matches('source.listFilters', 'result', { options: [] })).toBe(true);
+    expect(matches('source.listFilters', 'result', { options: [{ value: 'x' }] })).toBe(false);
+    expect(matches('source.listFilters', 'result', { options: [{ value: 'x', label: 'X', count: -1 }] })).toBe(false);
+  });
+});
+
+describe('invalid_cursor error code', () => {
+  test('is listed with the other Light Launcher codes', () => {
+    expect(protocol.$defs.errorCodes.enum).toContain(-32007);
+  });
+});
+
+describe('browse:filters capability', () => {
+  test('is a boolean and may be left out', () => {
+    const capabilities = (extra: object) => ({
+      pluginVersion: '1.0.0',
+      capabilities: {
+        site: { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false, ...extra },
+      },
+    });
+    expect(matches('initialize', 'result', capabilities({ 'browse:filters': true }))).toBe(true);
+    expect(matches('initialize', 'result', capabilities({ 'browse:filters': 'yes' }))).toBe(false);
+  });
+});
+
 describe('plugin manifest schema', () => {
   const manifest = (source: object) => ({
     id: 'demo-site',

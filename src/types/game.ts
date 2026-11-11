@@ -79,6 +79,8 @@ export interface ProviderCapabilities {
   versioned: boolean;
   /** true when the source implements source.listGames. Missing means false. */
   listGames?: boolean;
+  /** true when the source implements source.browse and source.listFilters. Missing means false. */
+  'browse:filters'?: boolean;
 }
 
 export interface AuthState {
