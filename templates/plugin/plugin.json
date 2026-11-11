@@ -1,6 +1,7 @@
 {
   "id": "__ID__",
   "name": "__ID__",
+  "description": "Describe what your plugin does.",
   "version": "0.1.0",
   "apiVersion": "1",
   "minHost": "2.0.0",
