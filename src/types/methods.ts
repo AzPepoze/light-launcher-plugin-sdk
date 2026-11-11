@@ -219,7 +219,8 @@ export interface EnqueueDownloadParams {
 export type DownloadRoot = 'downloads' | 'games';
 
 export interface EnqueueDownloadResult {
-  id: string;
+  /** The launcher's queue id for the download. */
+  id: number;
 }
 
 export interface ExtractParams {

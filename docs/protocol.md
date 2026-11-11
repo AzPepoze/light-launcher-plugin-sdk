@@ -147,7 +147,7 @@ The launcher checks the permission in the manifest before it runs a service.
 | `secrets.delete` | `secrets` | `key` | `null` |
 | `storage.get` | none | `key` | `value` |
 | `storage.set` | none | `key`, `value` | `null` |
-| `downloads.enqueue` | none, or `fs` for `$GAMES` (see below) | `url`, `filename`, `title?`, `size?`, `headers?`, `gameId?`, `root?`, `subfolder?`, `install?`, `installSubfolder?`, `deleteArchive?` | `id` |
+| `downloads.enqueue` | none, or `fs` for `$GAMES` (see below) | `url`, `filename`, `title?`, `size?`, `headers?`, `gameId?`, `root?`, `subfolder?`, `install?`, `installSubfolder?`, `deleteArchive?` | `id` (integer) |
 | `extract` | `fs` | `archive`, `destination` | `destination` |
 | `library.upsert` | none | `games[]` | `upserted`, `ids` |
 | `settings.get` | none | none | `settings` |

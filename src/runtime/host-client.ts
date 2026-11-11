@@ -39,8 +39,8 @@ export interface HostClient {
     set(key: string, value: unknown): Promise<void>;
   };
   downloads: {
-    /** resolves with the new download id */
-    enqueue(params: EnqueueDownloadParams): Promise<string>;
+    /** resolves with the launcher's numeric queue id */
+    enqueue(params: EnqueueDownloadParams): Promise<number>;
   };
   extract(params: ExtractParams): Promise<string>;
   library: {

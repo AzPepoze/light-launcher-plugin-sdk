@@ -79,6 +79,12 @@ describe('protocol schema', () => {
     expect(matches('library.upsert', 'result', { upserted: 1, ids: ['7'] })).toBe(false);
   });
 
+  test('downloads.enqueue result is the numeric queue id', () => {
+    expect(matches('downloads.enqueue', 'result', { id: 12 })).toBe(true);
+    expect(matches('downloads.enqueue', 'result', { id: '12' })).toBe(false);
+    expect(matches('downloads.enqueue', 'result', { id: -1 })).toBe(false);
+  });
+
   test('settings.changed carries the full settings object and no other keys', () => {
     expect(notificationMatches('settings.changed', { settings: { baseUrl: 'https://demo.test' } })).toBe(true);
     expect(notificationMatches('settings.changed', { settings: {} })).toBe(true);

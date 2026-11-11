@@ -581,7 +581,7 @@
       "result": {
         "type": "object",
         "required": ["id"],
-        "properties": { "id": { "type": "string" } },
+        "properties": { "id": { "type": "integer", "minimum": 0 } },
         "additionalProperties": false
       }
     },
