@@ -49,6 +49,7 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 | `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers`, `filename?`, `size?`, download hints (see below) |
 | `source.checkUpdate` | `source`, `game` | `update` or `null` |
 | `source.sync` | `source` | `games[]` or `SyncStatus` (see below) |
+| `source.listGames` | `source`, `scope`, `cursor?`, `limit` | `games[]`, `nextCursor?`, `total?` (see [List games](list-games.md)) |
 | `source.authStatus` | `source` | `AuthState` |
 | `source.setCredential` | `source`, `value` | `AuthState` |
 | `source.clearCredential` | `source` | `AuthState` |

@@ -43,7 +43,7 @@ Map each platform to a file inside the package. Keys: `linux-x64`, `linux-arm64`
 
 | Key | What it adds | Shape |
 |---|---|---|
-| `sources` | A game source: search, fetch, files, updates | `{ id, label, capabilities[] }` |
+| `sources` | A game source: search, fetch, files, updates | `{ id, label, tile?, capabilities[] }` |
 | `settings` | A settings form, built from a JSON Schema file | `{ "$ref": "settings.schema.json" }` |
 | `pages` | A page in the app | `{ id, title, path }` |
 | `commands` | An action in the command palette | `{ id, label, method? }` |
@@ -132,6 +132,10 @@ Source capabilities:
 | `resolveFiles` | `source.resolveFiles`, `source.prepareDownload` |
 | `sync:games` | `source.sync`, which returns an array of games |
 | `sync:index` | `source.sync`, which returns a status object: `count`, `syncedAt`, `running` |
+| `listGames` | `source.listGames`, the games the user owns, follows or bookmarks. See [List games](list-games.md) |
+
+`tile` sets the card shape in the library for this source. It is `poster` (3:4, the default),
+`wide` (16:9) or `square` (1:1). See [List games](list-games.md#the-tile).
 
 > [!IMPORTANT]
 > Declare `sync:games` or `sync:index`, never both. The two names tell the launcher what
