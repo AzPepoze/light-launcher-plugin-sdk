@@ -4,7 +4,7 @@ import { ErrorCode } from '../src/types/protocol';
 import { memoryIo, until } from './support/memory-io';
 
 /** A provider that records what it was asked, with no real site behind it. */
-function fakeProvider(options: { sync?: boolean; listGames?: boolean } = {}) {
+function fakeProvider(options: { sync?: boolean; listGames?: boolean; filters?: boolean } = {}) {
   const calls: string[] = [];
   const provider: SourceProvider = {
     id: 'demo',
@@ -30,6 +30,18 @@ function fakeProvider(options: { sync?: boolean; listGames?: boolean } = {}) {
           listGames: async (params) => {
             calls.push(`games:${params.cursor ?? ''}:${params.limit}`);
             return { games: [{ source: 'demo', sourceId: '2', url: 'u2', title: 'Owned' }], nextCursor: 'c-2', total: 9 };
+          },
+        }
+      : {}),
+    ...(options.filters
+      ? {
+          browse: async (params) => {
+            calls.push(`browse:${params.query ?? ''}:${JSON.stringify(params.filters ?? {})}:${params.sort ?? ''}:${params.limit}`);
+            return { games: [{ source: 'demo', sourceId: '3', url: 'u3', title: 'Filtered' }], nextCursor: 'b-2', total: 4 };
+          },
+          listFilters: async (params) => {
+            calls.push(`filters:${params.group}:${params.query ?? ''}:${params.limit}`);
+            return { options: [{ value: 'rpg', label: 'RPG', count: 3 }] };
           },
         }
       : {}),
@@ -142,6 +154,64 @@ describe('sourceHandlers', () => {
     mem.send('{"jsonrpc":"2.0","id":10,"method":"source.listGames","params":{"source":"demo","scope":"mine","limit":0}}\n');
     await until(() => mem.outgoing().length === 1);
     expect(mem.outgoing()[0]).toMatchObject({ id: 10, error: { code: ErrorCode.InvalidParams } });
+    expect(calls).toEqual([]);
+    mem.end();
+    await done;
+  });
+
+  test('source.browse passes the filters, sort and cursor to the provider and returns its page', async () => {
+    const { provider, calls } = fakeProvider({ filters: true });
+    const plugin = startPlugin(provider);
+    plugin.send(
+      '{"jsonrpc":"2.0","id":11,"method":"source.browse","params":{"source":"demo","query":"pixel","filters":{"tags":["rpg"]},"sort":"date","order":"desc","cursor":"b-1","limit":20}}\n',
+    );
+    await until(() => plugin.outgoing().length === 1);
+    expect(calls).toEqual(['browse:pixel:{"tags":["rpg"]}:date:20']);
+    expect(plugin.outgoing()[0]).toEqual({
+      jsonrpc: '2.0',
+      id: 11,
+      result: { games: [{ source: 'demo', sourceId: '3', url: 'u3', title: 'Filtered' }], nextCursor: 'b-2', total: 4 },
+    });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('source.listFilters passes the group and box text to the provider and returns its options', async () => {
+    const { provider, calls } = fakeProvider({ filters: true });
+    const plugin = startPlugin(provider);
+    plugin.send('{"jsonrpc":"2.0","id":12,"method":"source.listFilters","params":{"source":"demo","group":"tags","query":"r","limit":50}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(calls).toEqual(['filters:tags:r:50']);
+    expect(plugin.outgoing()[0]).toEqual({
+      jsonrpc: '2.0',
+      id: 12,
+      result: { options: [{ value: 'rpg', label: 'RPG', count: 3 }] },
+    });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('source.browse and source.listFilters answer with method not found when the provider has neither', async () => {
+    const { provider } = fakeProvider();
+    const plugin = startPlugin(provider);
+    plugin.send('{"jsonrpc":"2.0","id":13,"method":"source.browse","params":{"source":"demo","limit":10}}\n');
+    plugin.send('{"jsonrpc":"2.0","id":14,"method":"source.listFilters","params":{"source":"demo","group":"tags","limit":10}}\n');
+    await until(() => plugin.outgoing().length === 2);
+    expect(plugin.outgoing()).toEqual([
+      expect.objectContaining({ id: 13, error: expect.objectContaining({ code: ErrorCode.MethodNotFound }) }),
+      expect.objectContaining({ id: 14, error: expect.objectContaining({ code: ErrorCode.MethodNotFound }) }),
+    ]);
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('source.browse with validateParams refuses a limit of 101 before the provider runs', async () => {
+    const { provider, calls } = fakeProvider({ filters: true });
+    const mem = memoryIo();
+    const done = servePlugin(sourceHandlers(provider, 'demo'), mem.io, {}, { validateParams: true });
+    mem.send('{"jsonrpc":"2.0","id":15,"method":"source.browse","params":{"source":"demo","limit":101}}\n');
+    await until(() => mem.outgoing().length === 1);
+    expect(mem.outgoing()[0]).toMatchObject({ id: 15, error: { code: ErrorCode.InvalidParams } });
     expect(calls).toEqual([]);
     mem.end();
     await done;
