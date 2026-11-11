@@ -13,6 +13,13 @@
       "description": "Unique plugin id: lowercase letters, digits and dashes."
     },
     "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "author": { "type": "string", "minLength": 1, "description": "Who wrote the plugin." },
+    "description": { "type": "string", "minLength": 1, "description": "What the plugin does, in a sentence or two." },
+    "homepage": {
+      "type": "string",
+      "pattern": "^https?://\\S+$",
+      "description": "Web page for the plugin, such as its repository or docs. An http or https URL."
+    },
     "version": {
       "type": "string",
       "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",

@@ -64,6 +64,10 @@ export interface PluginPermissions {
 export interface PluginManifest {
   id: string;
   name: string;
+  author?: string;
+  description?: string;
+  /** http or https URL */
+  homepage?: string;
   /** semver */
   version: string;
   /** major protocol version the plugin targets */
