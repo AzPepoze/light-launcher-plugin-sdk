@@ -217,6 +217,12 @@
       "additionalProperties": { "type": "string" }
     },
 
+    "folderPath": {
+      "type": "string",
+      "description": "A relative folder such as Team/Demo. Plain names joined by /, no drive letters, no .. or links.",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*/$)[^\\\\:\\u0000-\\u001f]+$"
+    },
+
     "syncStatus": {
       "type": "object",
       "description": "Summary of a sync:index source. The index stays in the plugin's dataDir.",
@@ -553,6 +559,7 @@
 
     "downloads.enqueue": {
       "direction": "plugin-to-host",
+      "description": "Queues a file. Folder options need the fs grant for $GAMES when they use the games folder or install.",
       "params": {
         "type": "object",
         "required": ["url", "filename"],
@@ -561,7 +568,13 @@
           "filename": { "type": "string" },
           "title": { "type": "string" },
           "size": { "type": "integer", "minimum": 0 },
-          "headers": { "$ref": "#/$defs/headers" }
+          "headers": { "$ref": "#/$defs/headers" },
+          "gameId": { "type": "integer", "minimum": 0 },
+          "root": { "enum": ["downloads", "games"] },
+          "subfolder": { "$ref": "#/$defs/folderPath" },
+          "install": { "type": "boolean" },
+          "installSubfolder": { "$ref": "#/$defs/folderPath" },
+          "deleteArchive": { "type": "boolean" }
         },
         "additionalProperties": false
       },

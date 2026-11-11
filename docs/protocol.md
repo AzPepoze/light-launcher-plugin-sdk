@@ -147,7 +147,7 @@ The launcher checks the permission in the manifest before it runs a service.
 | `secrets.delete` | `secrets` | `key` | `null` |
 | `storage.get` | none | `key` | `value` |
 | `storage.set` | none | `key`, `value` | `null` |
-| `downloads.enqueue` | none | `url`, `filename`, `title?`, `size?`, `headers?` | `id` |
+| `downloads.enqueue` | none, or `fs` for `$GAMES` (see below) | `url`, `filename`, `title?`, `size?`, `headers?`, `gameId?`, `root?`, `subfolder?`, `install?`, `installSubfolder?`, `deleteArchive?` | `id` |
 | `extract` | `fs` | `archive`, `destination` | `destination` |
 | `library.upsert` | none | `games[]` | `upserted` |
 | `settings.get` | none | none | `settings` |
@@ -155,6 +155,31 @@ The launcher checks the permission in the manifest before it runs a service.
 
 > [!NOTE]
 > `http.request` does the rate limit, the retries and the ETag cache for the plugin.
+
+### downloads.enqueue folder options
+
+Every option except `url` and `filename` is optional. Without them, the file goes to the launcher's downloads folder.
+
+| Option | Meaning |
+|---|---|
+| `root` | `downloads` (default) or `games` |
+| `subfolder` | Folder under `root`, such as `Team/Demo` |
+| `install` | Install the archive after the download finishes |
+| `installSubfolder` | Folder under the games folder for the game. Needs `install` |
+| `deleteArchive` | Delete the archive after a good install. Leave it out to use the launcher setting. Needs `install` |
+| `gameId` | Library id of the game, from `library.upsert` |
+
+> [!IMPORTANT]
+> `root: "games"` and `install: true` need `"$GAMES"` in the plugin's `fs` permission. Otherwise the call fails with a permission error.
+
+Folder paths:
+
+- Use `/` between names, such as `Team/Demo`.
+- No drive letters (`C:`), no `\`, no leading `/`.
+- No `.`, `..` or empty names.
+- A folder that is a link is refused.
+
+A bad path fails with an invalid params error. The launcher creates the folders it needs.
 
 ### browser.assist
 

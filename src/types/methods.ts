@@ -202,7 +202,21 @@ export interface EnqueueDownloadParams {
   title?: string;
   size?: number;
   headers?: Record<string, string>;
+  /** Library id of the game this file belongs to, from library.upsert. */
+  gameId?: number;
+  /** 'downloads' (default) or 'games'. 'games' needs the $GAMES fs grant. */
+  root?: DownloadRoot;
+  /** Relative folder under root, such as 'Team/Demo'. */
+  subfolder?: string;
+  /** Install the archive after the download. Needs the $GAMES fs grant. */
+  install?: boolean;
+  /** Relative folder under the games folder for the installed game. Needs install. */
+  installSubfolder?: string;
+  /** Delete the archive after a successful install. Omit to use the launcher setting. Needs install. */
+  deleteArchive?: boolean;
 }
+
+export type DownloadRoot = 'downloads' | 'games';
 
 export interface EnqueueDownloadResult {
   id: string;

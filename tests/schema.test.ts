@@ -36,6 +36,33 @@ describe('protocol schema', () => {
     expect(matches('initialize', 'params', initializeWith(permissions(['$GAMES', '$APPDATA_ITCH'])))).toBe(true);
     expect(matches('initialize', 'params', initializeWith(permissions(['$ITCH_APP_DATA'])))).toBe(false);
   });
+
+  test('downloads.enqueue takes folder and install options', () => {
+    const base = { url: 'https://cdn.test/a.zip', filename: 'a.zip' };
+    const options = {
+      gameId: 3,
+      root: 'games',
+      subfolder: 'Team/Demo 2 (v1)',
+      install: true,
+      installSubfolder: 'Pack',
+      deleteArchive: false,
+    };
+    expect(matches('downloads.enqueue', 'params', { ...base, ...options })).toBe(true);
+    expect(matches('downloads.enqueue', 'params', base)).toBe(true);
+  });
+
+  test('downloads.enqueue refuses unsafe folder paths and unknown roots', () => {
+    const base = { url: 'https://cdn.test/a.zip', filename: 'a.zip' };
+    const unsafe = ['..', 'a/../b', './a', '/etc', 'C:/games', 'a\\b', 'a:b', 'a//b', 'a/', 'a/.', ''];
+    for (const subfolder of unsafe) {
+      expect(matches('downloads.enqueue', 'params', { ...base, subfolder })).toBe(false);
+      expect(matches('downloads.enqueue', 'params', { ...base, installSubfolder: subfolder })).toBe(false);
+    }
+    expect(matches('downloads.enqueue', 'params', { ...base, root: 'music' })).toBe(false);
+    expect(matches('downloads.enqueue', 'params', { ...base, install: 'yes' })).toBe(false);
+    expect(matches('downloads.enqueue', 'params', { ...base, gameId: -1 })).toBe(false);
+    expect(matches('downloads.enqueue', 'params', { ...base, where: '/tmp' })).toBe(false);
+  });
 });
 
 function initializeWith(grantedPermissions: object) {
