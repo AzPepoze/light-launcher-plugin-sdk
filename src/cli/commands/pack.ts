@@ -84,6 +84,7 @@ export function packCommand(dir: string, outDir: string, log: Logger): number {
   fs.mkdirSync(outDir, { recursive: true });
   const out = path.join(outDir, `${manifest.id}-${manifest.version}.llplugin`);
   fs.writeFileSync(out, writeZip(entries));
+  for (const entry of entries) log.info(`packed ${entry.name}`);
   log.info(`wrote ${out} (${entries.length} files)`);
   return 0;
 }

@@ -322,4 +322,23 @@ describe('validate and pack commands', () => {
     fs.rmSync(path.join(dir, 'bin/linux-x64/demo-site'));
     expect(packCommand(dir, path.join(workdir, 'dist'), quietLog())).toBe(1);
   });
+
+  test('pack lists the files it packed', () => {
+    const dir = path.join(workdir, 'listed');
+    writePluginWithSettings(dir, validSettings());
+    const { log, text } = captureLog();
+    expect(packCommand(dir, path.join(workdir, 'dist-listed'), log)).toBe(0);
+    for (const file of ['plugin.json', 'settings.schema.json', 'bin/linux-x64/demo-site', 'SHA256SUMS']) {
+      expect(text()).toContain(`packed ${file}`);
+    }
+  });
+
+  test('pack fails with a clear message when the settings file is missing', () => {
+    const dir = path.join(workdir, 'without-settings');
+    writePlugin(dir, { ...validManifest(), contributes: { settings: { $ref: 'settings.schema.json' } } });
+    const { log, text } = captureLog();
+    expect(packCommand(dir, path.join(workdir, 'dist-without-settings'), log)).toBe(1);
+    expect(text()).toContain('missing');
+    expect(text()).toContain('settings.schema.json');
+  });
 });
