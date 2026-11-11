@@ -91,6 +91,35 @@ describe('manifest validation', () => {
     manifest.contributes.commands = [{ id: 'import-key', label: 'Import key', method: 'importKey' }];
     expect(manifestProblems(manifest).some((p) => p.startsWith('/contributes/commands/0/method'))).toBe(true);
   });
+
+  test('accepts author, description and an http or https homepage', () => {
+    const manifest = {
+      ...validManifest(),
+      author: 'Ada Lovelace',
+      description: 'Imports games from a demo site.',
+      homepage: 'https://example.test/demo-site',
+    };
+    expect(manifestProblems(manifest)).toEqual([]);
+  });
+
+  test('rejects author, description and homepage that are not strings', () => {
+    const bad = { ...validManifest(), author: 42, description: ['text'], homepage: null } as unknown as PluginManifest;
+    const problems = manifestProblems(bad);
+    expect(problems.some((p) => p.startsWith('/author'))).toBe(true);
+    expect(problems.some((p) => p.startsWith('/description'))).toBe(true);
+    expect(problems.some((p) => p.startsWith('/homepage'))).toBe(true);
+  });
+
+  test('rejects a homepage that is not an http or https URL', () => {
+    const bad = { ...validManifest(), homepage: 'demo-site.test' };
+    expect(manifestProblems(bad).some((p) => p.startsWith('/homepage'))).toBe(true);
+    expect(manifestProblems({ ...validManifest(), homepage: 'ftp://example.test' }).length).toBeGreaterThan(0);
+  });
+
+  test('rejects empty author and description', () => {
+    expect(manifestProblems({ ...validManifest(), author: '' }).length).toBeGreaterThan(0);
+    expect(manifestProblems({ ...validManifest(), description: '' }).length).toBeGreaterThan(0);
+  });
 });
 
 describe('zip writer', () => {
