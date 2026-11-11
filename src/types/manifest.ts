@@ -7,6 +7,7 @@ export type PluginHook = 'onGameLaunch' | 'onGameExit' | 'onGameInstalled';
  */
 export type SourceCapability =
   | 'browse'
+  | 'browse:filters'
   | 'auth'
   | 'updateCheck'
   | 'resolveFiles'
@@ -17,11 +18,65 @@ export type SourceCapability =
 export type Tile = 'poster' | 'wide' | 'square';
 export type EntryKey = `${'linux' | 'windows' | 'mac'}-${'x64' | 'arm64'}`;
 
+export interface SidebarOption {
+  value: string;
+  label: string;
+}
+
+export interface SidebarSearch {
+  type: 'search';
+  id: string;
+  placeholder?: string;
+}
+
+export interface SidebarToggleOption extends SidebarOption {
+  icon?: string;
+}
+
+export interface SidebarToggles {
+  type: 'toggles';
+  id: string;
+  options: SidebarToggleOption[];
+}
+
+interface SidebarSelectBase {
+  type: 'select';
+  id: string;
+  label: string;
+}
+
+/** Either fixed options, or dynamic: true to load them with source.listFilters. */
+export type SidebarSelect =
+  | (SidebarSelectBase & { options: SidebarOption[]; dynamic?: never })
+  | (SidebarSelectBase & { dynamic: true; options?: never });
+
+export interface SidebarMulti {
+  type: 'multi';
+  id: string;
+  label: string;
+  dynamic: true;
+  searchable?: boolean;
+}
+
+export interface SidebarSort {
+  type: 'sort';
+  id: string;
+  options: SidebarOption[];
+  orderable?: boolean;
+  /** Its value must be one of the options. */
+  default?: { value: string; order: 'asc' | 'desc' };
+}
+
+/** One group in a source sidebar. The type decides the control the launcher shows. */
+export type SidebarGroup = SidebarSearch | SidebarToggles | SidebarSelect | SidebarMulti | SidebarSort;
+
 export interface SourceContribution {
   id: string;
   label: string;
   /** Card shape in the library. Missing means poster. */
   tile?: Tile;
+  /** Filters beside the list. Needs the browse:filters capability. */
+  sidebar?: SidebarGroup[];
   capabilities: SourceCapability[];
 }
 

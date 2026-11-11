@@ -193,6 +193,80 @@ describe('plugin manifest schema', () => {
     expect(manifestProblems(manifest({ capabilities: ['listGames', 'browse'] }))).toEqual([]);
     expect(manifestProblems(manifest({ capabilities: ['listAll'] })).length).toBeGreaterThan(0);
   });
+
+  describe('sidebar', () => {
+    const withSidebar = (sidebar: unknown, capabilities = ['browse', 'browse:filters']) =>
+      manifest({ capabilities, sidebar });
+    const allGroups = [
+      { type: 'search', id: 'text', placeholder: 'Search the site' },
+      {
+        type: 'toggles',
+        id: 'show',
+        options: [
+          { value: 'installed', label: 'Installed', icon: 'check' },
+          { value: 'favorite', label: 'Favorites' },
+        ],
+      },
+      { type: 'select', id: 'engine', label: 'Engine', options: [{ value: 'unity', label: 'Unity' }] },
+      { type: 'multi', id: 'tags', label: 'Tags', dynamic: true, searchable: true },
+      {
+        type: 'sort',
+        id: 'sort',
+        options: [
+          { value: 'date', label: 'Date' },
+          { value: 'title', label: 'Title' },
+        ],
+        orderable: true,
+        default: { value: 'date', order: 'desc' },
+      },
+    ];
+
+    test('accepts a sidebar with every group type', () => {
+      expect(manifestProblems(withSidebar(allGroups))).toEqual([]);
+    });
+
+    test('accepts a select from listFilters, and a sort with no default', () => {
+      const groups = [
+        { type: 'select', id: 'engine', label: 'Engine', dynamic: true },
+        { type: 'sort', id: 'sort', options: [{ value: 'title', label: 'Title' }] },
+      ];
+      expect(manifestProblems(withSidebar(groups))).toEqual([]);
+    });
+
+    test('refuses a sidebar without the browse:filters capability, and the reverse', () => {
+      expect(manifestProblems(withSidebar(allGroups, ['browse'])).length).toBeGreaterThan(0);
+      expect(manifestProblems(manifest({ capabilities: ['browse', 'browse:filters'] })).length).toBeGreaterThan(0);
+    });
+
+    test('refuses an empty sidebar and an unknown group type', () => {
+      expect(manifestProblems(withSidebar([])).length).toBeGreaterThan(0);
+      expect(manifestProblems(withSidebar([{ type: 'range', id: 'year' }])).length).toBeGreaterThan(0);
+    });
+
+    test('refuses a select with both options and dynamic, or with neither', () => {
+      const both = [{ type: 'select', id: 'engine', label: 'Engine', options: [{ value: 'a', label: 'A' }], dynamic: true }];
+      const neither = [{ type: 'select', id: 'engine', label: 'Engine' }];
+      expect(manifestProblems(withSidebar(both)).length).toBeGreaterThan(0);
+      expect(manifestProblems(withSidebar(neither)).length).toBeGreaterThan(0);
+    });
+
+    test('refuses a multi that is not dynamic', () => {
+      const groups = [{ type: 'multi', id: 'tags', label: 'Tags', dynamic: false }];
+      expect(manifestProblems(withSidebar(groups)).length).toBeGreaterThan(0);
+    });
+
+    test('refuses a bad group id, an empty option list, a bad sort order and unknown keys', () => {
+      const badId = [{ type: 'search', id: 'Text Box' }];
+      const noOptions = [{ type: 'sort', id: 'sort', options: [] }];
+      const badOrder = [
+        { type: 'sort', id: 'sort', options: [{ value: 'a', label: 'A' }], default: { value: 'a', order: 'up' } },
+      ];
+      const extraKey = [{ type: 'search', id: 'text', size: 3 }];
+      for (const groups of [badId, noOptions, badOrder, extraKey]) {
+        expect(manifestProblems(withSidebar(groups)).length).toBeGreaterThan(0);
+      }
+    });
+  });
 });
 
 const stringField = { type: 'string', title: 'Text', default: 'x' };
