@@ -55,6 +55,7 @@ new plugin only needs step 2. If you move the SDK folder, run step 1 again.
 | [Writing a plugin](docs/writing-a-plugin.md) | Build your first plugin step by step |
 | [Manifest](docs/manifest.md) | Know every field in `plugin.json`, including folder names |
 | [Protocol](docs/protocol.md) | Know every message the launcher and plugin send |
+| [Download hints](docs/download-hints.md) | Save downloads in the right folder, install them, and build safe folder names |
 
 ## Commands
 

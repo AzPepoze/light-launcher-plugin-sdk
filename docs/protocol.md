@@ -225,6 +225,8 @@ example, a `downloadFolder` setting maps to `subfolder`, `installAfterDownload` 
 `install`, `installFolder` to `installSubfolder`, and `deleteArchive` to `deleteArchive`.
 Use `root: "games"` when the user picked a folder in the games folder. Read the settings
 on each call with `ctx.host.settings.get()`, as described in [the README](../README.md).
+The SDK helper `downloadHints` builds these fields from the settings. See
+[Download hints](download-hints.md) for the helper and the folder-name rules.
 
 ## Notifications
 
