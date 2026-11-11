@@ -46,7 +46,7 @@ The full rules are in [schema/protocol.schema.json](../schema/protocol.schema.js
 | `source.search` | `source`, `url?`, `query?`, `page?` | `games[]` |
 | `source.fetchGame` | `source`, `ref` | `game` |
 | `source.resolveFiles` | `source`, `game` | `files[]` |
-| `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers`, `filename?`, `size?` |
+| `source.prepareDownload` | `source`, `file`, `game` | `url`, `headers`, `filename?`, `size?`, download hints (see below) |
 | `source.checkUpdate` | `source`, `game` | `update` or `null` |
 | `source.sync` | `source` | `games[]` or `SyncStatus` (see below) |
 | `source.authStatus` | `source` | `AuthState` |
@@ -208,6 +208,23 @@ is the id of the request being answered, so you can use it as the token.
 | `headers` | object | Headers the download must send |
 | `filename` | string, optional | The file name, when the plugin knows it |
 | `size` | integer, optional | The size in bytes, when the plugin knows it |
+| `root` | string, optional | `downloads` (default) or `games` |
+| `subfolder` | string, optional | Folder under `root`, such as `Team/Demo` |
+| `install` | boolean, optional | Install the archive after the download |
+| `installSubfolder` | string, optional | Folder under the games folder for the installed game. Needs `install` |
+| `deleteArchive` | boolean, optional | Delete the archive after a good install. Leave it out to use the launcher setting. Needs `install` |
+
+> [!NOTE]
+> The hints are a backwards-compatible minor addition. A plugin that returns only
+> `url` and `headers` still works, and an older launcher ignores the new fields.
+
+#### Download hints
+
+Fill these fields from the plugin's settings so the user chooses where files go. For
+example, a `downloadFolder` setting maps to `subfolder`, `installAfterDownload` to
+`install`, `installFolder` to `installSubfolder`, and `deleteArchive` to `deleteArchive`.
+Use `root: "games"` when the user picked a folder in the games folder. Read the settings
+on each call with `ctx.host.settings.get()`, as described in [the README](../README.md).
 
 ## Notifications
 
