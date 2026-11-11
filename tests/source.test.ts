@@ -4,7 +4,7 @@ import { ErrorCode } from '../src/types/protocol';
 import { memoryIo, until } from './support/memory-io';
 
 /** A provider that records what it was asked, with no real site behind it. */
-function fakeProvider(options: { sync?: boolean } = {}) {
+function fakeProvider(options: { sync?: boolean; listGames?: boolean } = {}) {
   const calls: string[] = [];
   const provider: SourceProvider = {
     id: 'demo',
@@ -25,6 +25,14 @@ function fakeProvider(options: { sync?: boolean } = {}) {
     },
     checkUpdate: async () => null,
     ...(options.sync ? { sync: async () => [] } : {}),
+    ...(options.listGames
+      ? {
+          listGames: async (params) => {
+            calls.push(`games:${params.cursor ?? ''}:${params.limit}`);
+            return { games: [{ source: 'demo', sourceId: '2', url: 'u2', title: 'Owned' }], nextCursor: 'c-2', total: 9 };
+          },
+        }
+      : {}),
   };
   return { provider, calls };
 }
@@ -100,6 +108,43 @@ describe('sourceHandlers', () => {
     expect(plugin.outgoing()[0]).toEqual({ jsonrpc: '2.0', id: 6, result: [] });
     plugin.end();
     await plugin.done;
+  });
+
+  test('source.listGames passes the page params to the provider and returns its page', async () => {
+    const { provider, calls } = fakeProvider({ listGames: true });
+    const plugin = startPlugin(provider);
+    plugin.send('{"jsonrpc":"2.0","id":8,"method":"source.listGames","params":{"source":"demo","scope":"mine","cursor":"c-1","limit":50}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(calls).toEqual(['games:c-1:50']);
+    expect(plugin.outgoing()[0]).toEqual({
+      jsonrpc: '2.0',
+      id: 8,
+      result: { games: [{ source: 'demo', sourceId: '2', url: 'u2', title: 'Owned' }], nextCursor: 'c-2', total: 9 },
+    });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('source.listGames answers with method not found when the provider has no listGames', async () => {
+    const { provider } = fakeProvider();
+    const plugin = startPlugin(provider);
+    plugin.send('{"jsonrpc":"2.0","id":9,"method":"source.listGames","params":{"source":"demo","scope":"mine","limit":10}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 9, error: { code: ErrorCode.MethodNotFound } });
+    plugin.end();
+    await plugin.done;
+  });
+
+  test('source.listGames with validateParams refuses a limit of 0 before the provider runs', async () => {
+    const { provider, calls } = fakeProvider({ listGames: true });
+    const mem = memoryIo();
+    const done = servePlugin(sourceHandlers(provider, 'demo'), mem.io, {}, { validateParams: true });
+    mem.send('{"jsonrpc":"2.0","id":10,"method":"source.listGames","params":{"source":"demo","scope":"mine","limit":0}}\n');
+    await until(() => mem.outgoing().length === 1);
+    expect(mem.outgoing()[0]).toMatchObject({ id: 10, error: { code: ErrorCode.InvalidParams } });
+    expect(calls).toEqual([]);
+    mem.end();
+    await done;
   });
 
   test('a provider function is looked up on each request, so it can be built in initialize', async () => {

@@ -77,6 +77,8 @@ export interface ProviderCapabilities {
   resolveFiles: boolean;
   /** version strings are meaningful, not just file times */
   versioned: boolean;
+  /** true when the source implements source.listGames. Missing means false. */
+  listGames?: boolean;
 }
 
 export interface AuthState {

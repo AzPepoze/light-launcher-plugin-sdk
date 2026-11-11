@@ -132,10 +132,17 @@
       "properties": {
         "id": { "$ref": "#/$defs/itemId" },
         "label": { "type": "string", "minLength": 1 },
+        "tile": {
+          "enum": ["poster", "wide", "square"],
+          "default": "poster",
+          "description": "Shape of the game card in the library: poster (3:4), wide (16:9) or square (1:1)."
+        },
         "capabilities": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["browse", "auth", "updateCheck", "resolveFiles", "sync:games", "sync:index"] },
+          "items": {
+            "enum": ["browse", "auth", "updateCheck", "resolveFiles", "sync:games", "sync:index", "listGames"]
+          },
           "not": {
             "allOf": [
               { "contains": { "const": "sync:games" } },

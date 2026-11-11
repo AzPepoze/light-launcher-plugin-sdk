@@ -114,6 +114,26 @@ export interface SyncStatus {
  */
 export type SyncResult = SyncStatus | GameDTO[];
 
+/** Only "mine" for now: the games the user owns, follows or bookmarked at the source. */
+export type ListGamesScope = 'mine';
+
+export interface ListGamesParams {
+  source: string;
+  scope: ListGamesScope;
+  /** Opaque cursor from the previous page's nextCursor. Missing for the first page. */
+  cursor?: string;
+  /** 1 to 200 games per page */
+  limit: number;
+}
+
+export interface ListGamesResult {
+  games: GameDTO[];
+  /** Pass as cursor to get the next page. Missing on the last page. */
+  nextCursor?: string;
+  /** Total number of games, when the source knows it */
+  total?: number;
+}
+
 export interface AuthStatusParams {
   source: string;
 }
@@ -141,6 +161,8 @@ export interface HostMethods {
   'source.prepareDownload': { params: PrepareDownloadParams; result: PrepareDownloadResult };
   'source.checkUpdate': { params: CheckUpdateParams; result: CheckUpdateResult };
   'source.sync': { params: SyncParams; result: SyncResult };
+  /** Needs the listGames capability. */
+  'source.listGames': { params: ListGamesParams; result: ListGamesResult };
   /** The plugin validates the credential, then saves it with secrets.set. */
   'source.setCredential': { params: SetCredentialParams; result: AuthState };
   'source.authStatus': { params: AuthStatusParams; result: AuthState };

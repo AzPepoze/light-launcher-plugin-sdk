@@ -1,5 +1,5 @@
 import type { AuthState, FileCandidate, GameDTO, GameRef, ProviderCapabilities, Ref, UpdateInfo } from '../types/game';
-import type { PrepareDownloadResult, SyncResult } from '../types/methods';
+import type { ListGamesParams, ListGamesResult, PrepareDownloadResult, SyncResult } from '../types/methods';
 import { ErrorCode, RpcFailure } from '../types/protocol';
 import type { ProgressReport } from './peer';
 import type { PluginHandlers } from './serve';
@@ -38,6 +38,9 @@ export interface SourceProvider {
 
   /** Only for a source that declares sync:games or sync:index. */
   sync?(hooks: CallHooks): Promise<SyncResult>;
+
+  /** Only for a source that declares the listGames capability. */
+  listGames?(params: ListGamesParams, hooks: CallHooks): Promise<ListGamesResult>;
 }
 
 /** A provider, or a function that returns it once initialize has built it. */
@@ -72,5 +75,11 @@ export function sourceHandlers(provider: SourceProviderSource, sourceId: string)
       if (!target.sync) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${source} has no sync`);
       return target.sync({ signal: ctx.signal, progress: ctx.progress });
     },
+    'source.listGames': (params, ctx) => listGamesOf(forSource(params.source), params, ctx),
   };
+}
+
+async function listGamesOf(target: SourceProvider, params: ListGamesParams, hooks: CallHooks): Promise<ListGamesResult> {
+  if (!target.listGames) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${params.source} has no listGames`);
+  return target.listGames(params, { signal: hooks.signal, progress: hooks.progress });
 }

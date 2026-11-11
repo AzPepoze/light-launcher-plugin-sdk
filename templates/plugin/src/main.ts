@@ -10,7 +10,14 @@ const handlers: PluginHandlers<PluginMethods> = {
   initialize: () => ({
     pluginVersion: '0.1.0',
     capabilities: {
-      '__ID__': { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false },
+      '__ID__': {
+        browse: true,
+        auth: 'none',
+        updateCheck: false,
+        resolveFiles: false,
+        versioned: false,
+        listGames: false,
+      },
     },
   }),
   'source.search': async (_params, ctx) => {

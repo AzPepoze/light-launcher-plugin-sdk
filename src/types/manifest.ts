@@ -5,12 +5,23 @@ export type PluginHook = 'onGameLaunch' | 'onGameExit' | 'onGameInstalled';
  * "sync:games" means source.sync returns GameDTO[].
  * "sync:index" means source.sync returns a SyncStatus. Declare at most one.
  */
-export type SourceCapability = 'browse' | 'auth' | 'updateCheck' | 'resolveFiles' | 'sync:games' | 'sync:index';
+export type SourceCapability =
+  | 'browse'
+  | 'auth'
+  | 'updateCheck'
+  | 'resolveFiles'
+  | 'sync:games'
+  | 'sync:index'
+  | 'listGames';
+/** Card shape in the library: poster (3:4, the default), wide (16:9) or square (1:1). */
+export type Tile = 'poster' | 'wide' | 'square';
 export type EntryKey = `${'linux' | 'windows' | 'mac'}-${'x64' | 'arm64'}`;
 
 export interface SourceContribution {
   id: string;
   label: string;
+  /** Card shape in the library. Missing means poster. */
+  tile?: Tile;
   capabilities: SourceCapability[];
 }
 

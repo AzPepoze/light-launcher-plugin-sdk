@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import Ajv2020 from 'ajv/dist/2020';
 import protocol from '../schema/protocol.schema.json';
+import { manifestProblems } from '../src/schema/manifest';
 import { settingsSchemaProblems } from '../src/schema/settings';
 
 const methods = protocol.methods as unknown as Record<string, { params?: object; result?: object }>;
@@ -114,6 +115,83 @@ describe('protocol schema', () => {
     expect(notificationMatches('settings.changed', { settings: 'x' })).toBe(false);
     expect(notificationMatches('settings.changed', {})).toBe(false);
     expect(notificationMatches('settings.changed', { settings: {}, extra: true })).toBe(false);
+  });
+});
+
+describe('source.listGames schema', () => {
+  const params = { source: 'site', scope: 'mine', limit: 60 };
+  const game = { source: 'site', sourceId: '1', url: 'https://site.test/1', title: 'Game' };
+
+  test('accepts a first page, a page with a cursor, and the limit bounds', () => {
+    expect(matches('source.listGames', 'params', params)).toBe(true);
+    expect(matches('source.listGames', 'params', { ...params, cursor: 'c-2' })).toBe(true);
+    expect(matches('source.listGames', 'params', { ...params, limit: 1 })).toBe(true);
+    expect(matches('source.listGames', 'params', { ...params, limit: 200 })).toBe(true);
+  });
+
+  test('refuses a limit outside 1 to 200, a scope other than mine, and unknown keys', () => {
+    expect(matches('source.listGames', 'params', { ...params, limit: 0 })).toBe(false);
+    expect(matches('source.listGames', 'params', { ...params, limit: 201 })).toBe(false);
+    expect(matches('source.listGames', 'params', { ...params, limit: 1.5 })).toBe(false);
+    expect(matches('source.listGames', 'params', { ...params, scope: 'all' })).toBe(false);
+    expect(matches('source.listGames', 'params', { source: 'site', limit: 60 })).toBe(false);
+    expect(matches('source.listGames', 'params', { ...params, sort: 'title' })).toBe(false);
+  });
+
+  test('accepts a result with or without nextCursor and total', () => {
+    expect(matches('source.listGames', 'result', { games: [game] })).toBe(true);
+    expect(matches('source.listGames', 'result', { games: [], nextCursor: 'c-2', total: 500 })).toBe(true);
+    expect(matches('source.listGames', 'result', { games: [], total: 0 })).toBe(true);
+  });
+
+  test('refuses a result with a negative total, a bad cursor, a bad game or unknown keys', () => {
+    expect(matches('source.listGames', 'result', { games: [], total: -1 })).toBe(false);
+    expect(matches('source.listGames', 'result', { games: [], nextCursor: 2 })).toBe(false);
+    expect(matches('source.listGames', 'result', { games: [{ title: 'no source' }] })).toBe(false);
+    expect(matches('source.listGames', 'result', { games: [], more: true })).toBe(false);
+    expect(matches('source.listGames', 'result', {})).toBe(false);
+  });
+
+  test('the listGames capability is a boolean and may be left out', () => {
+    const capabilities = (extra: object) => ({
+      pluginVersion: '1.0.0',
+      capabilities: {
+        site: { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false, ...extra },
+      },
+    });
+    expect(matches('initialize', 'result', capabilities({}))).toBe(true);
+    expect(matches('initialize', 'result', capabilities({ listGames: true }))).toBe(true);
+    expect(matches('initialize', 'result', capabilities({ listGames: 'yes' }))).toBe(false);
+  });
+});
+
+describe('plugin manifest schema', () => {
+  const manifest = (source: object) => ({
+    id: 'demo-site',
+    name: 'Demo Site',
+    version: '1.0.0',
+    apiVersion: '1',
+    minHost: '2.0.0',
+    entry: { 'linux-x64': 'bin/linux-x64/demo-site' },
+    contributes: { sources: [{ id: 'site', label: 'Site', ...source }] },
+    permissions: {},
+  });
+
+  test('accepts each tile and a source without one', () => {
+    for (const tile of ['poster', 'wide', 'square']) {
+      expect(manifestProblems(manifest({ tile, capabilities: ['listGames'] }))).toEqual([]);
+    }
+    expect(manifestProblems(manifest({ capabilities: ['browse'] }))).toEqual([]);
+  });
+
+  test('refuses a tile outside poster, wide and square', () => {
+    const problems = manifestProblems(manifest({ tile: 'tall', capabilities: ['browse'] }));
+    expect(problems.some((p) => p.startsWith('/contributes/sources/0/tile'))).toBe(true);
+  });
+
+  test('accepts the listGames capability and refuses unknown ones', () => {
+    expect(manifestProblems(manifest({ capabilities: ['listGames', 'browse'] }))).toEqual([]);
+    expect(manifestProblems(manifest({ capabilities: ['listAll'] })).length).toBeGreaterThan(0);
   });
 });
 
