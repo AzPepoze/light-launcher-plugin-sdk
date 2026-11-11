@@ -188,6 +188,27 @@ describe('secrets round trip', () => {
   });
 });
 
+describe('settings round trip', () => {
+  test('a host that answers null for settings.get gives the plugin an empty object, not a crash', async () => {
+    const plugin = startPlugin({
+      'source.authStatus': async (_params, ctx) => {
+        const settings = await ctx.host.settings.get();
+        return { status: Object.keys(settings).length === 0 ? 'unconfigured' : 'ok' };
+      },
+    });
+
+    plugin.send('{"jsonrpc":"2.0","id":1,"method":"source.authStatus","params":{"source":"x"}}\n');
+    await until(() => plugin.outgoing().length > 0);
+    const read = plugin.outgoing()[0];
+    expect(read).toMatchObject({ method: 'settings.get' });
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: read.id, result: null }) + '\n');
+    await until(() => plugin.outgoing().length > 1);
+    expect(plugin.outgoing()[1]).toEqual({ jsonrpc: '2.0', id: 1, result: { status: 'unconfigured' } });
+    plugin.end();
+    await plugin.done;
+  });
+});
+
 describe('param validation', () => {
   function startValidated(handlers: PluginHandlers) {
     const mem = memoryIo();

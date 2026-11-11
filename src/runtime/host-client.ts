@@ -90,7 +90,7 @@ export function createHostClient(transport: HostTransport): HostClient {
       upsert: async (games) => (await call('library.upsert', { games })).upserted,
     },
     settings: {
-      get: async () => (await call('settings.get', {})).settings,
+      get: async () => (await call('settings.get', {}))?.settings ?? {},
     },
     browser: {
       assist: (params, options) => call('browser.assist', params, options),
