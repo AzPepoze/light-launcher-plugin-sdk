@@ -281,6 +281,11 @@ describe('init command', () => {
     fs.writeFileSync(path.join(workdir, 'taken/keep.txt'), 'x');
     expect(initCommand('taken', workdir, quietLog())).toBe(1);
   });
+
+  test('the scaffolded template passes validate, including its settings schema', () => {
+    expect(initCommand('template-check', workdir, quietLog())).toBe(0);
+    expect(validateCommand(path.join(workdir, 'template-check'), quietLog())).toBe(0);
+  });
 });
 
 describe('validate and pack commands', () => {

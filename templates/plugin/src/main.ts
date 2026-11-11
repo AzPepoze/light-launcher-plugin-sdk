@@ -13,8 +13,11 @@ const handlers: PluginHandlers<PluginMethods> = {
       '__ID__': { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false },
     },
   }),
-  'source.search': (_params, ctx) => {
-    ctx.host.log('debug', 'search called');
+  'source.search': async (_params, ctx) => {
+    // Settings can change while the plugin runs, so read them on each call.
+    const settings = await ctx.host.settings.get();
+    const baseUrl = String(settings.baseUrl ?? 'https://example.test');
+    ctx.host.log('debug', `search called for ${baseUrl}`);
     return { games: [] };
   },
   // Return a ref when the URL belongs to this source, otherwise null.

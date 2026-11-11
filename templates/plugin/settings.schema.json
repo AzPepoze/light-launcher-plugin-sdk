@@ -1,12 +1,29 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Plugin settings",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "baseUrl": {
       "type": "string",
       "title": "Base URL",
-      "default": "https://example.test"
+      "description": "Address of the site this plugin talks to.",
+      "default": "https://example.test",
+      "x-ll-group": "Site"
+    },
+    "browseFolder": {
+      "type": "string",
+      "title": "Browse folder",
+      "description": "Folder for files saved from the browse page.",
+      "default": "",
+      "x-ll-group": "Files",
+      "x-ll-widget": "folder"
+    },
+    "useProxy": {
+      "type": "boolean",
+      "title": "Use a proxy",
+      "default": false,
+      "x-ll-advanced": true
     }
   }
 }
