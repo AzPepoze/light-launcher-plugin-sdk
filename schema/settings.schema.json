@@ -102,7 +102,7 @@
         "type": { "const": "string" },
         "enum": { "type": "array", "minItems": 1, "uniqueItems": true }
       },
-      "oneOf": [{ "required": ["type"] }, { "required": ["enum"] }]
+      "anyOf": [{ "required": ["type"] }, { "required": ["enum"] }]
     }
   }
 }

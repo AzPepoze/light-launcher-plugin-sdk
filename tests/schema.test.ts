@@ -152,7 +152,9 @@ describe('settings schema', () => {
     const noItems = settingsSchema({ a: { type: 'array', title: 'A', default: [] } });
     expect(settingsSchemaProblems(noItems).some((p) => p.startsWith('/properties/a') && p.includes('items'))).toBe(true);
     const both = settingsSchema({ a: { type: 'array', title: 'A', default: [], items: { type: 'string', enum: ['a'] } } });
-    expect(settingsSchemaProblems(both).some((p) => p.startsWith('/properties/a/items'))).toBe(true);
+    expect(settingsSchemaProblems(both)).toEqual([]);
+    const neither = settingsSchema({ a: { type: 'array', title: 'A', default: [], items: {} } });
+    expect(settingsSchemaProblems(neither).some((p) => p.startsWith('/properties/a/items'))).toBe(true);
     const onString = settingsSchema({ a: { ...stringField, items: { type: 'string' } } });
     expect(settingsSchemaProblems(onString).some((p) => p.includes('/properties/a/type'))).toBe(true);
   });
