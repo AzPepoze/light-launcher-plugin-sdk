@@ -12,6 +12,9 @@ Unknown keys are errors, so a typo shows up at once.
 |---|---|---|---|
 | `id` | text | yes | Unique id. Lowercase letters, digits and dashes. 2 to 40 characters |
 | `name` | text | yes | Name shown to users |
+| `author` | text | no | Who wrote the plugin |
+| `description` | text | no | What the plugin does, in a sentence or two |
+| `homepage` | text | no | Web page for the plugin, such as its repository. Must start with `http://` or `https://` |
 | `version` | text | yes | Your plugin version, in [semver](https://semver.org) form, such as `1.0.0` |
 | `apiVersion` | text | yes | Major protocol version you target. Today: `"1"` |
 | `minHost` | text | yes | Oldest launcher version that can run the plugin, such as `2.0.0` |
