@@ -256,6 +256,7 @@ schema defaults are already applied, so `settings` has the same shape as the res
 The plugin is **not** restarted. Settings can change between calls, so read them on each
 call with `ctx.host.settings.get()`. While a request is running, `ctx.onSettingsChanged(handler)`
 calls `handler` with the new settings. The listener is removed when the request answers.
+See [Settings](settings.md#settingschanged) for the field rules and the `x-ll-*` extensions.
 
 
 ## Cancel and timeouts

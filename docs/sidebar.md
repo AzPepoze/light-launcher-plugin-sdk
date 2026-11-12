@@ -49,15 +49,73 @@ The order in `sidebar` is the order on screen. Every group needs an `id`. Use it
 
 ## Methods
 
+Both methods need the `browse:filters` capability.
+
 | Method | Params | Result |
 |---|---|---|
 | `source.browse` | `source`, `query?`, `filters?`, `sort?`, `order?`, `cursor?`, `limit` (1 to 100) | `games[]`, `nextCursor?`, `total?` |
 | `source.listFilters` | `source`, `group`, `query?`, `limit` (1 to 200) | `options[]` (`value`, `label`, `count?`) |
 
-- `filters` is keyed by group id. A group id the plugin does not know is ignored.
-- `source.listFilters` runs for a `select` or `multi` group with `dynamic: true`. `query` is the text in that group's box.
-- `count` is the number of games with that value in the whole source. It does not change with the other filters.
-- `total` is the number of games that match the filters, when the source knows it.
+### source.browse
+
+Request params:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `source` | string | yes | The source id |
+| `query` | string | no | Text from the `search` group |
+| `filters` | object | no | Keyed by group id. A group id the plugin does not know is ignored |
+| `sort` | string | no | The `value` of the chosen `sort` option |
+| `order` | `"asc"` or `"desc"` | no | The sort direction |
+| `cursor` | string | no | The `nextCursor` from the last page. Left out on the first page |
+| `limit` | integer, 1 to 100 | yes | How many games to return at most |
+
+Result:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `games` | `GameDTO[]` | The games on this page. Same shape as in `source.search` |
+| `nextCursor` | string | Send it back as `cursor` for the next page. Left out on the last page |
+| `total` | integer, 0 or more | How many games match the filters, when the source knows it |
+
+```json
+{"jsonrpc":"2.0","id":4,"method":"source.browse","params":{"source":"site","query":"space","filters":{"engine":"unity","tags":["rpg"],"show":["installed"]},"sort":"date","order":"desc","limit":40}}
+```
+
+```json
+{"jsonrpc":"2.0","id":4,"result":{"games":[],"nextCursor":"page-2","total":120}}
+```
+
+Values in `filters` follow the group type: a list for `toggles` and `multi`, one value
+for `select`. A `search` group sends its text in `query`, not in `filters`.
+
+### source.listFilters
+
+Request params:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `source` | string | yes | The source id |
+| `group` | string | yes | The id of a `select` or `multi` group with `dynamic: true` |
+| `query` | string | no | Text typed in the group's filter box |
+| `limit` | integer, 1 to 200 | yes | How many options to return at most |
+
+Result:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `options` | `FilterOption[]` | The matching options |
+
+Each `FilterOption` has `value` and `label`, plus an optional `count`: the number of
+games with that value in the whole source. It does not change with the other filters.
+
+```json
+{"jsonrpc":"2.0","id":5,"method":"source.listFilters","params":{"source":"site","group":"tags","query":"act","limit":100}}
+```
+
+```json
+{"jsonrpc":"2.0","id":5,"result":{"options":[{"value":"action","label":"Action","count":42}]}}
+```
 
 ## Cursors and errors
 

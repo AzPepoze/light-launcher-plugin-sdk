@@ -80,7 +80,8 @@ draw nested objects, so keep every field at the top level.
 | `required` | top level | Names of the fields the user must fill |
 | `additionalProperties` | top level | Only `false` is supported |
 
-The extensions below are optional:
+The extensions below are optional. See [Settings](settings.md#x-ll-extensions) for examples
+and validation rules.
 
 | Extension | Type | What it does |
 |---|---|---|
@@ -103,7 +104,7 @@ The extensions below are optional:
 
 > [!IMPORTANT]
 > The plugin is not restarted when settings change. Read them on each call with
-> `ctx.host.settings.get()`. See [settings.changed](protocol.md#settingschanged).
+> `ctx.host.settings.get()`. See [Settings](settings.md#settingschanged).
 
 ### commands
 
