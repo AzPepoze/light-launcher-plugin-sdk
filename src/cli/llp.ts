@@ -2,7 +2,9 @@
 import path from 'node:path';
 import { conformanceCommand } from './commands/conformance';
 import { initCommand } from './commands/init';
+import { keygenCommand } from './commands/keygen';
 import { packCommand } from './commands/pack';
+import { signCommand } from './commands/sign';
 import { validateCommand } from './commands/validate';
 import { createLogger } from './log';
 
@@ -12,28 +14,34 @@ const USAGE = `llp - Light Launcher plugin tool
   llp validate [dir]             check plugin.json against the schema
   llp pack [dir] [--out <dir>]   build <id>-<version>.llplugin
   llp test [dir]                 run the plugin and check the protocol
+  llp keygen [--out <dir>]       create an ed25519 signing key pair
+  llp sign <package> --key <pem> [--out <package>]
+                                 sign SHA256SUMS and write SIGNATURE
 `;
 
 interface ParsedArgs {
   positional: string[];
   out?: string;
+  key?: string;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
   const positional: string[] = [];
   let out: string | undefined;
+  let key: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out') out = argv[++i];
+    else if (argv[i] === '--key') key = argv[++i];
     else positional.push(argv[i]);
   }
-  return { positional, out };
+  return { positional, out, key };
 }
 
 /** Runs one llp command. Returns the process exit code. */
 export async function main(argv: string[], cwd = process.cwd()): Promise<number> {
   const [command, ...rest] = argv;
-  const { positional, out } = parseArgs(rest);
-  const cwdPath = (dir: string | undefined) => path.resolve(cwd, dir ?? '.');
+  const { positional, out, key } = parseArgs(rest);
+  const cwdPath = (file: string | undefined) => path.resolve(cwd, file ?? '.');
 
   switch (command) {
     case 'init': {
@@ -47,6 +55,17 @@ export async function main(argv: string[], cwd = process.cwd()): Promise<number>
       return packCommand(cwdPath(positional[0]), out ? cwdPath(out) : cwd, createLogger('pack'));
     case 'test':
       return conformanceCommand(cwdPath(positional[0]), createLogger('test'));
+    case 'keygen':
+      return keygenCommand(cwdPath(out), createLogger('keygen'));
+    case 'sign': {
+      const packagePath = positional[0];
+      if (!packagePath) return usageError('sign needs a package, e.g. llp sign demo-1.0.0.llplugin --key private.pem');
+      return signCommand(
+        cwdPath(packagePath),
+        { key: key ? cwdPath(key) : undefined, out: out ? cwdPath(out) : undefined },
+        createLogger('sign'),
+      );
+    }
     case undefined:
     case '--help':
     case 'help':
