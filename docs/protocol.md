@@ -216,6 +216,12 @@ is the id of the request being answered, so you can use it as the token.
 | `install` | boolean, optional | Install the archive after the download |
 | `installSubfolder` | string, optional | Folder under the games folder for the installed game. Needs `install` |
 | `deleteArchive` | boolean, optional | Delete the archive after a good install. Leave it out to use the launcher setting. Needs `install` |
+| `decrypt` | object, optional | `{ algorithm: "aes-128-ctr", key: "<base64 16 bytes>", nonce: "<base64 8 bytes>" }` for an encrypted file. The host decrypts the finished download before install. |
+
+> [!NOTE]
+> AES-CTR has no authentication tag, so a wrong key is only detected for installs (the host
+> checks the decrypted archive magic). A non-install download with a wrong key produces
+> unreadable bytes.
 
 > [!NOTE]
 > The hints are a backwards-compatible minor addition. A plugin that returns only

@@ -37,6 +37,15 @@ describe('protocol schema', () => {
     };
     expect(matches('source.prepareDownload', 'result', { ...base, ...hints })).toBe(true);
     expect(matches('source.prepareDownload', 'result', base)).toBe(true);
+
+    const decrypt = {
+      algorithm: 'aes-128-ctr',
+      key: 'MDEyMzQ1Njc4OWFiY2RlZg==',
+      nonce: 'MDEyMzQ1Njc4OWFi',
+    };
+    expect(matches('source.prepareDownload', 'result', { ...base, decrypt })).toBe(true);
+    expect(matches('source.prepareDownload', 'result', { ...base, decrypt: { ...decrypt, algorithm: 'aes-256-gcm' } })).toBe(false);
+    expect(matches('source.prepareDownload', 'result', { ...base, decrypt: { algorithm: 'aes-128-ctr', key: 'x' } })).toBe(false);
   });
 
   test('prepareDownload refuses unsafe folders and bad hint values', () => {

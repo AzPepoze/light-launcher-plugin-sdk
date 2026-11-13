@@ -382,7 +382,17 @@
           "subfolder": { "$ref": "#/$defs/folderPath" },
           "install": { "type": "boolean" },
           "installSubfolder": { "$ref": "#/$defs/folderPath" },
-          "deleteArchive": { "type": "boolean" }
+          "deleteArchive": { "type": "boolean" },
+          "decrypt": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["algorithm", "key", "nonce"],
+            "properties": {
+              "algorithm": { "const": "aes-128-ctr" },
+              "key": { "type": "string", "minLength": 1 },
+              "nonce": { "type": "string", "minLength": 1 }
+            }
+          }
         },
         "additionalProperties": false
       }

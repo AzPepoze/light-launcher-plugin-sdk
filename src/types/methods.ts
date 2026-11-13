@@ -68,6 +68,15 @@ export interface PrepareDownloadParams {
   game: GameRef;
 }
 
+/** AES-128-CTR parameters for a finished download that the host must decrypt before install. */
+export interface DownloadDecrypt {
+  algorithm: 'aes-128-ctr';
+  /** Standard base64 of the 16-byte key. The host never logs it. */
+  key: string;
+  /** Standard base64 of the 8-byte nonce. The counter starts at zero after it. */
+  nonce: string;
+}
+
 export interface PrepareDownloadResult {
   url: string;
   headers: Record<string, string>;
@@ -85,6 +94,8 @@ export interface PrepareDownloadResult {
   installSubfolder?: string;
   /** Delete the archive after a successful install. Omit to use the launcher setting. Needs install. */
   deleteArchive?: boolean;
+  /** Decrypt the finished file before install. Omit when the file is not encrypted. */
+  decrypt?: DownloadDecrypt;
 }
 
 export interface CheckUpdateParams {
