@@ -17,7 +17,8 @@ talks to it over text messages, and stops it if it crashes.
 ## Quick start
 
 > [!NOTE]
-> The SDK is not on npm yet. Link it from a local checkout, as shown below.
+> The package is ready to publish but is not on npm yet. Link it from a local checkout until the
+> first release is published.
 
 ```bash
 # in the SDK folder
@@ -60,6 +61,18 @@ new plugin only needs step 2. If you move the SDK folder, run step 1 again.
 | [List games](docs/list-games.md) | Show the games a user owns or follows, page through them, and pick the card shape |
 | [Sidebar](docs/sidebar.md) | Add search, toggles, choices, tags and a sort beside a source's list |
 | [Signing](docs/signing.md) | Create a trusted key and sign a package before publishing |
+
+## Publishing
+
+The package is publishable (`publishConfig.access: public`). Publishing needs an npm token that can
+write to the `@light-launcher` scope; it is not stored here.
+
+1. Bump `version` in `package.json`.
+2. Push a matching tag, such as `v0.1.1`. `.github/workflows/publish.yml` runs the tests, typecheck
+   and `npm publish --provenance --access public` using the `NPM_TOKEN` repository secret.
+3. Then `bun add @light-launcher/plugin-sdk` works for plugin authors.
+
+Run `npm pack --dry-run` locally to inspect the tarball without publishing.
 
 ## Commands
 
