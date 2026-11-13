@@ -5,16 +5,37 @@
   "description": "The plugin.json file at the root of a .llplugin package.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "name", "version", "apiVersion", "minHost", "entry", "contributes", "permissions"],
+  "required": [
+    "id",
+    "name",
+    "version",
+    "apiVersion",
+    "minHost",
+    "entry",
+    "contributes",
+    "permissions"
+  ],
   "properties": {
     "id": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]{1,39}$",
       "description": "Unique plugin id: lowercase letters, digits and dashes."
     },
-    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "author": { "type": "string", "minLength": 1, "description": "Who wrote the plugin." },
-    "description": { "type": "string", "minLength": 1, "description": "What the plugin does, in a sentence or two." },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who wrote the plugin."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the plugin does, in a sentence or two."
+    },
     "homepage": {
       "type": "string",
       "pattern": "^https?://\\S+$",
@@ -45,13 +66,21 @@
       "description": "Executable per platform, relative to the package root.",
       "minProperties": 1,
       "additionalProperties": false,
-      "propertyNames": { "pattern": "^(linux|windows|mac)-(x64|arm64)$" },
+      "propertyNames": {
+        "pattern": "^(linux|windows|mac)-(x64|arm64)$"
+      },
       "patternProperties": {
-        "^(linux|windows|mac)-(x64|arm64)$": { "$ref": "#/$defs/relativePath" }
+        "^(linux|windows|mac)-(x64|arm64)$": {
+          "$ref": "#/$defs/relativePath"
+        }
       }
     },
-    "contributes": { "$ref": "#/$defs/contributes" },
-    "permissions": { "$ref": "#/$defs/permissions" }
+    "contributes": {
+      "$ref": "#/$defs/contributes"
+    },
+    "permissions": {
+      "$ref": "#/$defs/permissions"
+    }
   },
   "$defs": {
     "relativePath": {
@@ -64,36 +93,29 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
         "settings": {
           "type": "object",
           "description": "Settings schema. Drives the auto-generated settings form.",
           "additionalProperties": false,
-          "required": ["$ref"],
+          "required": [
+            "$ref"
+          ],
           "properties": {
-            "$ref": { "$ref": "#/$defs/relativePath" }
+            "$ref": {
+              "$ref": "#/$defs/relativePath"
+            }
           }
         },
-        "pages": { "type": "array", "items": { "$ref": "#/$defs/page" } },
-        "commands": { "type": "array", "items": { "$ref": "#/$defs/command" } },
-        "hooks": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": { "enum": ["onGameLaunch", "onGameExit", "onGameInstalled"] }
-        },
-        "launchAdapters": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
-        "importers": { "type": "array", "items": { "$ref": "#/$defs/namedItem" } },
-        "themes": {
+        "commands": {
           "type": "array",
           "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "label", "path"],
-            "properties": {
-              "id": { "$ref": "#/$defs/itemId" },
-              "label": { "type": "string", "minLength": 1 },
-              "path": { "$ref": "#/$defs/relativePath" }
-            }
+            "$ref": "#/$defs/command"
           }
         }
       }
@@ -102,22 +124,21 @@
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]{0,39}$"
     },
-    "namedItem": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "label"],
-      "properties": {
-        "id": { "$ref": "#/$defs/itemId" },
-        "label": { "type": "string", "minLength": 1 }
-      }
-    },
     "command": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label"],
+      "required": [
+        "id",
+        "label"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/itemId" },
-        "label": { "type": "string", "minLength": 1 },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
         "method": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*(\\.[A-Za-z][A-Za-z0-9]*)+$",
@@ -128,14 +149,41 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "capabilities"],
+      "required": [
+        "id",
+        "label",
+        "capabilities"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/itemId" },
-        "label": { "type": "string", "minLength": 1 },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
         "tile": {
-          "enum": ["poster", "wide", "square"],
+          "enum": [
+            "poster",
+            "wide",
+            "square"
+          ],
           "default": "poster",
-          "description": "Shape of the game card in the library: poster (3:4), wide (16:9) or square (1:1)."
+          "description": "Older card shape: poster (3:4), wide (16:9) or square (1:1). cover wins when both are set."
+        },
+        "cover": {
+          "$ref": "#/$defs/cover"
+        },
+        "actions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/sourceAction"
+          },
+          "description": "Buttons the library shows for the source. Ids must be unique inside the source."
+        },
+        "card": {
+          "$ref": "#/$defs/sourceCard"
         },
         "capabilities": {
           "type": "array",
@@ -154,8 +202,16 @@
           },
           "not": {
             "allOf": [
-              { "contains": { "const": "sync:games" } },
-              { "contains": { "const": "sync:index" } }
+              {
+                "contains": {
+                  "const": "sync:games"
+                }
+              },
+              {
+                "contains": {
+                  "const": "sync:index"
+                }
+              }
             ]
           }
         },
@@ -163,70 +219,238 @@
           "type": "array",
           "minItems": 1,
           "description": "Filters shown beside the source's list, in this order. Needs the browse:filters capability.",
-          "items": { "$ref": "#/$defs/sidebarGroup" }
+          "items": {
+            "$ref": "#/$defs/sidebarGroup"
+          }
         }
       },
       "allOf": [
         {
-          "if": { "required": ["sidebar"] },
-          "then": { "properties": { "capabilities": { "type": "array", "contains": { "const": "browse:filters" } } } }
+          "if": {
+            "required": [
+              "sidebar"
+            ]
+          },
+          "then": {
+            "properties": {
+              "capabilities": {
+                "type": "array",
+                "contains": {
+                  "const": "browse:filters"
+                }
+              }
+            }
+          }
         },
         {
           "if": {
-            "required": ["capabilities"],
-            "properties": { "capabilities": { "type": "array", "contains": { "const": "browse:filters" } } }
+            "required": [
+              "capabilities"
+            ],
+            "properties": {
+              "capabilities": {
+                "type": "array",
+                "contains": {
+                  "const": "browse:filters"
+                }
+              }
+            }
           },
-          "then": { "required": ["sidebar"] }
+          "then": {
+            "required": [
+              "sidebar"
+            ]
+          }
         }
       ]
+    },
+    "cover": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ratio"
+      ],
+      "properties": {
+        "ratio": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]?:[1-9][0-9]?$",
+          "description": "Width:height of the card box, such as 4:3. Sides are 1 to 32, and width to height is 0.25 to 4 (checked by the launcher)."
+        }
+      }
+    },
+    "sourceAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "method"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icon": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Material icon name, such as sync."
+        },
+        "method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[A-Za-z][A-Za-z0-9]*)+$",
+          "description": "The plugin method the launcher calls, such as demo-site.sync."
+        },
+        "scope": {
+          "enum": [
+            "library",
+            "game"
+          ],
+          "default": "library",
+          "description": "library: shown in the library sidebar. game: shown in the game detail."
+        }
+      }
+    },
+    "sourceCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "enum": [
+            "sourceId",
+            "title",
+            "version",
+            "developer",
+            "engine",
+            "status",
+            "updatedAt"
+          ],
+          "default": "title"
+        },
+        "subtitle": {
+          "enum": [
+            "sourceId",
+            "title",
+            "version",
+            "developer",
+            "engine",
+            "status",
+            "updatedAt"
+          ],
+          "default": "version"
+        },
+        "badges": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "favorite",
+              "updateAvailable",
+              "installed"
+            ]
+          }
+        }
+      }
     },
     "sidebarGroup": {
       "description": "One group in a source sidebar. The type decides the control the launcher shows.",
       "oneOf": [
-        { "$ref": "#/$defs/sidebarSearch" },
-        { "$ref": "#/$defs/sidebarToggles" },
-        { "$ref": "#/$defs/sidebarSelect" },
-        { "$ref": "#/$defs/sidebarMulti" },
-        { "$ref": "#/$defs/sidebarSort" }
+        {
+          "$ref": "#/$defs/sidebarSearch"
+        },
+        {
+          "$ref": "#/$defs/sidebarToggles"
+        },
+        {
+          "$ref": "#/$defs/sidebarSelect"
+        },
+        {
+          "$ref": "#/$defs/sidebarMulti"
+        },
+        {
+          "$ref": "#/$defs/sidebarSort"
+        }
       ]
     },
     "sidebarSearch": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id"],
+      "required": [
+        "type",
+        "id"
+      ],
       "properties": {
-        "type": { "const": "search" },
-        "id": { "$ref": "#/$defs/itemId" },
-        "placeholder": { "type": "string", "minLength": 1 }
+        "type": {
+          "const": "search"
+        },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "placeholder": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "sidebarOption": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["value", "label"],
+      "required": [
+        "value",
+        "label"
+      ],
       "properties": {
-        "value": { "type": "string", "minLength": 1 },
-        "label": { "type": "string", "minLength": 1 }
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "sidebarToggles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id", "options"],
+      "required": [
+        "type",
+        "id",
+        "options"
+      ],
       "properties": {
-        "type": { "const": "toggles" },
-        "id": { "$ref": "#/$defs/itemId" },
+        "type": {
+          "const": "toggles"
+        },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
         "options": {
           "type": "array",
           "minItems": 1,
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["value", "label"],
+            "required": [
+              "value",
+              "label"
+            ],
             "properties": {
-              "value": { "type": "string", "minLength": 1 },
-              "label": { "type": "string", "minLength": 1 },
-              "icon": { "type": "string", "minLength": 1 }
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "icon": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -235,64 +459,142 @@
     "sidebarSelect": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id", "label"],
-      "oneOf": [{ "required": ["options"] }, { "required": ["dynamic"] }],
+      "required": [
+        "type",
+        "id",
+        "label"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "options"
+          ]
+        },
+        {
+          "required": [
+            "dynamic"
+          ]
+        }
+      ],
       "properties": {
-        "type": { "const": "select" },
-        "id": { "$ref": "#/$defs/itemId" },
-        "label": { "type": "string", "minLength": 1 },
-        "options": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/sidebarOption" } },
-        "dynamic": { "const": true, "description": "The options come from source.listFilters." }
+        "type": {
+          "const": "select"
+        },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sidebarOption"
+          }
+        },
+        "dynamic": {
+          "const": true,
+          "description": "The options come from source.listFilters."
+        }
       }
     },
     "sidebarMulti": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id", "label", "dynamic"],
+      "required": [
+        "type",
+        "id",
+        "label",
+        "dynamic"
+      ],
       "properties": {
-        "type": { "const": "multi" },
-        "id": { "$ref": "#/$defs/itemId" },
-        "label": { "type": "string", "minLength": 1 },
-        "dynamic": { "const": true, "description": "The options come from source.listFilters." },
-        "searchable": { "type": "boolean", "default": false, "description": "Show a box to filter the options." }
+        "type": {
+          "const": "multi"
+        },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dynamic": {
+          "const": true,
+          "description": "The options come from source.listFilters."
+        },
+        "searchable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a box to filter the options."
+        }
       }
     },
     "sidebarSort": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id", "options"],
+      "required": [
+        "type",
+        "id",
+        "options"
+      ],
       "properties": {
-        "type": { "const": "sort" },
-        "id": { "$ref": "#/$defs/itemId" },
-        "options": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/sidebarOption" } },
-        "orderable": { "type": "boolean", "default": false, "description": "Show an ascending or descending button." },
+        "type": {
+          "const": "sort"
+        },
+        "id": {
+          "$ref": "#/$defs/itemId"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sidebarOption"
+          }
+        },
+        "orderable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show an ascending or descending button."
+        },
         "default": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["value", "order"],
+          "required": [
+            "value",
+            "order"
+          ],
           "description": "The sort the list starts with. Its value must be one of the options.",
           "properties": {
-            "value": { "type": "string", "minLength": 1 },
-            "order": { "enum": ["asc", "desc"] }
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "order": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
           }
         }
-      }
-    },
-    "page": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "title", "path"],
-      "properties": {
-        "id": { "$ref": "#/$defs/itemId" },
-        "title": { "type": "string", "minLength": 1 },
-        "path": { "$ref": "#/$defs/relativePath" }
       }
     },
     "fsName": {
       "description": "A folder the host grants. The host maps only these names: $GAMES, $DOWNLOADS, $DATA, and $APPDATA_<NAME> for an app's data folder.",
       "anyOf": [
-        { "enum": ["$GAMES", "$DOWNLOADS", "$DATA"] },
-        { "type": "string", "pattern": "^\\$APPDATA_[A-Z][A-Z0-9_]*$" }
+        {
+          "enum": [
+            "$GAMES",
+            "$DOWNLOADS",
+            "$DATA"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^\\$APPDATA_[A-Z][A-Z0-9_]*$"
+        }
       ]
     },
     "permissions": {
@@ -311,11 +613,22 @@
         "fs": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/fsName" }
+          "items": {
+            "$ref": "#/$defs/fsName"
+          }
         },
-        "secrets": { "type": "boolean", "default": false },
-        "browser": { "type": "boolean", "default": false },
-        "exec": { "type": "boolean", "default": false }
+        "secrets": {
+          "type": "boolean",
+          "default": false
+        },
+        "browser": {
+          "type": "boolean",
+          "default": false
+        },
+        "exec": {
+          "type": "boolean",
+          "default": false
+        }
       }
     }
   }

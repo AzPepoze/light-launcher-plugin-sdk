@@ -45,12 +45,7 @@ Map each platform to a file inside the package. Keys: `linux-x64`, `linux-arm64`
 |---|---|---|
 | `sources` | A game source: search, fetch, files, updates | `{ id, label, tile?, sidebar?, capabilities[] }` |
 | `settings` | A settings form, built from a JSON Schema file | `{ "$ref": "settings.schema.json" }` |
-| `pages` | A page in the app | `{ id, title, path }` |
 | `commands` | An action in the command palette | `{ id, label, method? }` |
-| `hooks` | Events to react to | `onGameLaunch`, `onGameExit`, `onGameInstalled` |
-| `launchAdapters` | A wrapper around game launch | `{ id, label }` |
-| `importers` | Import games from another launcher | `{ id, label }` |
-| `themes` | Colors and fonts | `{ id, label, path }` |
 
 ### settings
 

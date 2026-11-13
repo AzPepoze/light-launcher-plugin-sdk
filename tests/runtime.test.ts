@@ -73,6 +73,19 @@ describe('request handling', () => {
     await plugin.done;
   });
 
+  test('sends auth required as its own code', async () => {
+    const plugin = startPlugin({
+      'source.search': () => {
+        throw new RpcFailure(ErrorCode.AuthRequired, 'needs a key');
+      },
+    });
+    plugin.send('{"jsonrpc":"2.0","id":5,"method":"source.search","params":{"source":"x"}}\n');
+    await until(() => plugin.outgoing().length === 1);
+    expect(plugin.outgoing()[0]).toMatchObject({ id: 5, error: { code: -32008, message: 'needs a key' } });
+    plugin.end();
+    await plugin.done;
+  });
+
   test('joins lines split across chunks and accepts CRLF', async () => {
     const plugin = startPlugin({ 'source.sync': () => [] });
     plugin.send('{"jsonrpc":"2.0","id":3,"method":"source.sy');
@@ -204,6 +217,35 @@ describe('settings round trip', () => {
     plugin.send(JSON.stringify({ jsonrpc: '2.0', id: read.id, result: null }) + '\n');
     await until(() => plugin.outgoing().length > 1);
     expect(plugin.outgoing()[1]).toEqual({ jsonrpc: '2.0', id: 1, result: { status: 'unconfigured' } });
+    plugin.end();
+    await plugin.done;
+  });
+});
+
+describe('host calls during initialize', () => {
+  test('the initialize handler can call the host before it answers', async () => {
+    let seen: Record<string, unknown> | undefined;
+    const plugin = startPlugin({
+      initialize: async (_params, ctx) => {
+        seen = await ctx.host.settings.get();
+        return { pluginVersion: '1.0.0', capabilities: {} };
+      },
+    });
+
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: initializeParams }) + '\n');
+    await until(() => plugin.outgoing().length === 1);
+    const read = plugin.outgoing()[0];
+    expect(read).toMatchObject({ method: 'settings.get' });
+
+    plugin.send(JSON.stringify({ jsonrpc: '2.0', id: read.id, result: { settings: { region: 'eu' } } }) + '\n');
+    await until(() => plugin.outgoing().length === 2);
+    expect(plugin.outgoing()[1]).toEqual({
+      jsonrpc: '2.0',
+      id: 1,
+      result: { pluginVersion: '1.0.0', capabilities: {} },
+    });
+    expect(seen).toEqual({ region: 'eu' });
+
     plugin.end();
     await plugin.done;
   });

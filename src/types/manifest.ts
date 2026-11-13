@@ -14,8 +14,32 @@ export type SourceCapability =
   | 'sync:games'
   | 'sync:index'
   | 'listGames';
-/** Card shape in the library: poster (3:4, the default), wide (16:9) or square (1:1). */
+/** Older card shape in the library: poster (3:4, the default), wide (16:9) or square (1:1). Use cover instead. */
 export type Tile = 'poster' | 'wide' | 'square';
+/** Card box as "W:H", such as "4:3". Sides are 1 to 32 and width to height is 0.25 to 4. */
+export interface SourceCover {
+  ratio: string;
+}
+/** A button in the library sidebar (library) or in the game detail (game). */
+export interface SourceAction {
+  id: string;
+  label: string;
+  /** Material icon name, such as sync */
+  icon?: string;
+  /** plugin method the launcher calls, such as demo-site.sync */
+  method: string;
+  /** Default library */
+  scope?: 'library' | 'game';
+}
+/** Game fields a card can show as its title or subtitle. */
+export type CardField = 'sourceId' | 'title' | 'version' | 'developer' | 'engine' | 'status' | 'updatedAt';
+export type CardBadge = 'favorite' | 'updateAvailable' | 'installed';
+/** Which game fields a card shows. Missing fields use title and version, with no badges. */
+export interface SourceCard {
+  title?: CardField;
+  subtitle?: CardField;
+  badges?: CardBadge[];
+}
 export type EntryKey = `${'linux' | 'windows' | 'mac'}-${'x64' | 'arm64'}`;
 
 export interface SidebarOption {
@@ -73,8 +97,12 @@ export type SidebarGroup = SidebarSearch | SidebarToggles | SidebarSelect | Side
 export interface SourceContribution {
   id: string;
   label: string;
-  /** Card shape in the library. Missing means poster. */
+  /** Older card shape. Missing means poster. cover wins when both are set. */
   tile?: Tile;
+  cover?: SourceCover;
+  /** At most 8 buttons, with unique ids. */
+  actions?: SourceAction[];
+  card?: SourceCard;
   /** Filters beside the list. Needs the browse:filters capability. */
   sidebar?: SidebarGroup[];
   capabilities: SourceCapability[];
@@ -97,21 +125,10 @@ export interface CommandContribution extends NamedContribution {
   method?: string;
 }
 
-export interface ThemeContribution {
-  id: string;
-  label: string;
-  path: string;
-}
-
 export interface Contributes {
   sources?: SourceContribution[];
   settings?: { $ref: string };
-  pages?: PageContribution[];
   commands?: CommandContribution[];
-  hooks?: PluginHook[];
-  launchAdapters?: NamedContribution[];
-  importers?: NamedContribution[];
-  themes?: ThemeContribution[];
 }
 
 /** A folder the host maps: $GAMES, $DOWNLOADS, $DATA, or $APPDATA_<NAME>. */

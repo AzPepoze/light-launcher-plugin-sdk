@@ -229,6 +229,12 @@ describe('invalid_cursor error code', () => {
   });
 });
 
+describe('auth required error code', () => {
+  test('is listed with the other Light Launcher codes', () => {
+    expect(protocol.$defs.errorCodes.enum).toContain(-32008);
+  });
+});
+
 describe('browse:filters capability', () => {
   test('is a boolean and may be left out', () => {
     const capabilities = (extra: object) => ({

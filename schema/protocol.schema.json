@@ -56,7 +56,7 @@
 
     "errorCodes": {
       "description": "Standard JSON-RPC codes plus Light Launcher codes in the -32000 range.",
-      "enum": [-32700, -32600, -32601, -32602, -32603, -32001, -32002, -32003, -32004, -32005, -32006, -32007]
+      "enum": [-32700, -32600, -32601, -32602, -32603, -32001, -32002, -32003, -32004, -32005, -32006, -32007, -32008]
     },
 
     "platform": {
@@ -889,6 +889,7 @@
     "-32003": "Request timed out.",
     "-32004": "Rate limited by the remote site.",
     "-32005": "Remote site returned an error the plugin did not allow.",
-    "-32006": "Not modified: the source answered 304 and the caller should keep its old data."
+    "-32006": "Not modified: the source answered 304 and the caller should keep its old data.",
+    "-32008": "Auth required: the source needs a key or sign in before it can answer."
   }
 }

@@ -280,6 +280,7 @@ See [Settings](settings.md#settingschanged) for the field rules and the `x-ll-*`
 | -32005 | Remote error | The site returned an error the plugin did not allow |
 | -32006 | Not modified | The site answered 304. Keep the old data |
 | -32007 | `invalid_cursor` | The cursor does not match this query, filters, sort and order |
+| -32008 | Auth required | The source needs a key or sign in before it can answer |
 
 ## Example
 

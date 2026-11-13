@@ -37,8 +37,6 @@ function declaredFiles(manifest: PluginManifest): string[] {
   return [
     ...Object.values(manifest.entry),
     contributes.settings?.$ref,
-    ...(contributes.pages ?? []).map((page) => page.path),
-    ...(contributes.themes ?? []).map((theme) => theme.path),
   ].filter((rel): rel is string => Boolean(rel));
 }
 

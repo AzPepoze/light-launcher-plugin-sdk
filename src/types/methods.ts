@@ -183,6 +183,20 @@ export interface ListFiltersResult {
   options: FilterOption[];
 }
 
+/** Params the host sends to a source action's method. gameId is null for a library action. */
+export interface ActionParams {
+  source: string;
+  action: string;
+  gameId: number | null;
+}
+
+/** The answer of a source action method. refresh true makes the launcher reload the library list. */
+export interface ActionResult {
+  /** short text shown in a toast */
+  message: string;
+  refresh: boolean;
+}
+
 export interface AuthStatusParams {
   source: string;
 }

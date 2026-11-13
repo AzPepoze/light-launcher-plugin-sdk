@@ -47,6 +47,8 @@ export const ErrorCode = {
   NotModified: -32006,
   /** The message is "invalid_cursor". The cursor is not one this query issued. */
   InvalidCursor: -32007,
+  /** the source needs a key or sign in before it can answer */
+  AuthRequired: -32008,
 } as const;
 
 export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
