@@ -1,5 +1,5 @@
-import type { DownloadSettings } from '../types/downloads';
 import type { PrepareDownloadResult } from '../types/methods';
+import type { DownloadSettings } from './settings';
 
 export type DownloadHints = Pick<
   PrepareDownloadResult,

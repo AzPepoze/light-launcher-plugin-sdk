@@ -1,4 +1,4 @@
-import type { DownloadRoot } from './methods';
+import type { DownloadRoot } from '../types/methods';
 
 /** The download choices a plugin offers the user in its settings. */
 export interface DownloadSettings {

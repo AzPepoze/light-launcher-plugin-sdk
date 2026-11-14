@@ -7,7 +7,7 @@ import {
   sanitizeFolderName,
 } from '../src/downloads/hints';
 import { settingsSchemaProblems } from '../src/schema/settings';
-import type { DownloadSettings } from '../src/types/downloads';
+import type { DownloadSettings } from '../src/downloads/settings';
 
 describe('sanitizeFolderName', () => {
   test.each([
