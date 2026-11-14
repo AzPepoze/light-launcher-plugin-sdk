@@ -1,6 +1,5 @@
 /** Shape of plugin.json. Matches schema/plugin.schema.json. */
 
-export type PluginHook = 'onGameLaunch' | 'onGameExit' | 'onGameInstalled';
 /**
  * "sync:games" means source.sync returns GameDTO[].
  * "sync:index" means source.sync returns a SyncStatus. Declare at most one.
@@ -106,13 +105,6 @@ export interface SourceContribution {
   /** Filters beside the list. Needs the browse:filters capability. */
   sidebar?: SidebarGroup[];
   capabilities: SourceCapability[];
-}
-
-export interface PageContribution {
-  id: string;
-  title: string;
-  /** path inside the package, such as ui/index.html */
-  path: string;
 }
 
 export interface NamedContribution {

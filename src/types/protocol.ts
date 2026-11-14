@@ -51,8 +51,6 @@ export const ErrorCode = {
   AuthRequired: -32008,
 } as const;
 
-export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
-
 /** Error thrown by the host or plugin with a protocol error code. */
 export class RpcFailure extends Error {
   constructor(
