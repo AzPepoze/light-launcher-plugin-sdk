@@ -64,12 +64,12 @@ The helpers wrap the host calls, so your code reads like normal code.
 |---|---|
 | `HttpClient` with `hostTransport(ctx.host)` | Sends every request through the launcher |
 | `load(html)` | Parses HTML with cheerio |
-| `extractLinks(doc, selector, hosts, baseUrl)` | Finds download links in a post |
-| `compareVersions`, `isNewer` | Compares version text such as `v0.8.1` |
-| `scoreMatch`, `normalizeTitle` | Matches a title against another title |
+| `classifyLink` | Decides whether a link is a download and what kind |
+| `isNewer`, `sameVersion`, `versionFromText` | Compares and reads version text such as `v0.8.1` |
+| `parseSize`, `usableImage`, `cleanHtml` | Reads sizes and cleans page HTML |
 
 ```ts
-import { HttpClient, hostTransport, load } from '@light-launcher/plugin-sdk';
+import { HttpClient, hostTransport, load } from '@light-launcher/plugin-sdk/helpers';
 
 const http = new HttpClient(hostTransport(ctx.host));
 const page = await http.request('https://demo.example/game/42');
@@ -90,6 +90,8 @@ const title = doc('h1').text().trim();
 so the status is kept.
 
 ```ts
+import { HttpClient, hostTransport, HttpError } from '@light-launcher/plugin-sdk/helpers';
+
 const http = new HttpClient(hostTransport(ctx.host), { defaultHeaders: { Cookie: session } });
 try {
   const data = await http.json<Listing>(url);
@@ -102,6 +104,39 @@ try {
 > [!NOTE]
 > For tests, use `fetchTransport()` instead. It calls `fetch` directly. It has no allow-list,
 > retries or cache, so it is for tests only.
+
+### Shared helpers
+
+| Helper | Import | What it does |
+|---|---|---|
+| `createLogger(category)` | `/runtime` | Writes debug, info, warn and error lines to stderr. Colors need a TTY and no `NO_COLOR` |
+| `spacedTransport(inner, { minDelayMs })` | `/helpers` | Starts requests at least `minDelayMs` apart, in call order |
+| `writeDump(dir, name, body)` | `/helpers` | Saves a raw page as `<name>.html`. Does nothing when `dir` is empty |
+| `readSettings(host, parser, defaults)` | `/helpers` | Reads `settings.get` with a 5 s timeout and falls back to the defaults |
+| `parseDownloadSettings(raw)` | `/helpers` | Reads the four download settings, with the defaults applied |
+| `cachedSecret(host, key)` | `/runtime` | Reads a secret once and keeps it for the life of the process |
+| `HostServices` | `/runtime` | Base type for the services a plugin passes to its providers |
+
+```ts
+import {
+  HttpClient,
+  hostTransport,
+  parseDownloadSettings,
+  readSettings,
+  spacedTransport,
+  writeDump,
+} from '@light-launcher/plugin-sdk/helpers';
+import { cachedSecret, createLogger } from '@light-launcher/plugin-sdk/runtime';
+import { DOWNLOAD_SETTINGS_DEFAULTS } from '@light-launcher/plugin-sdk/downloads';
+
+const log = createLogger('demo-site');
+const http = new HttpClient(spacedTransport(hostTransport(ctx.host), { minDelayMs: 1000 }));
+const page = await http.request(gameUrl);
+const downloads = await readSettings(ctx.host, parseDownloadSettings, DOWNLOAD_SETTINGS_DEFAULTS);
+const cookie = await cachedSecret(ctx.host, 'cookie');
+writeDump('/tmp/dumps', 'unsent page', page.text);
+log.info(`download root: ${downloads.downloadRoot}, cookie: ${cookie ? 'set' : 'missing'}`);
+```
 
 ## 4. Declare what you use
 
@@ -160,7 +195,8 @@ The launcher calls `source.setCredential` with the value. Your plugin checks it,
 },
 ```
 
-Read the secret later with `ctx.host.secrets.get('apiKey')`. Remove it with
+Read the secret later with `ctx.host.secrets.get('apiKey')`, or with
+`cachedSecret(ctx.host, 'apiKey')` when it does not change while the plugin runs. Remove it with
 `ctx.host.secrets.delete('apiKey')`, which runs when the user clears the credential.
 
 > [!WARNING]

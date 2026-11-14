@@ -1,4 +1,4 @@
-/** Title normalisation and scoring, ported from interesting-launcher core/title-match.ts. */
+/** Title normalisation, ported from interesting-launcher core/title-match.ts. */
 
 const NOISE = new Set([
   'the', 'a', 'an', 'and', 'of', 'for', 'my', 'to', 'in', 'on', 'public', 'trial', 'demo',
@@ -6,7 +6,7 @@ const NOISE = new Set([
   'game', 'games', 'completed', 'abandoned', 'ongoing', 'renpy', 'unity', 'rpgm', 'html',
 ]);
 
-export function normalizeTitle(input: string): string {
+function normalizeTitle(input: string): string {
   return input
     .replace(/\[[^\]]*\]/g, ' ')
     .replace(/\([^)]*\)/g, ' ')
@@ -26,33 +26,6 @@ export function compactTitle(input: string): string {
 
 export function titleTokens(input: string): string[] {
   return [...new Set(normalizeTitle(input).split(' ').filter((t) => t.length > 1 && !NOISE.has(t)))];
-}
-
-/** Like titleTokens, but keeps one-character numeric tokens so "Game 2" never matches "Game 3". */
-export function matchTokens(input: string): string[] {
-  return [...new Set(normalizeTitle(input).split(' ').filter((t) => t && !NOISE.has(t)))];
-}
-
-/** 0..2.5, higher is better */
-export function scoreMatch(query: string, candidate: string): number {
-  const q = normalizeTitle(query);
-  const c = normalizeTitle(candidate);
-  if (!q || !c) return 0;
-
-  const qTokens = titleTokens(query);
-  const cTokens = new Set(titleTokens(candidate));
-  let hits = 0;
-  for (const token of qTokens) if (cTokens.has(token)) hits++;
-
-  let score = qTokens.length ? hits / qTokens.length : 0;
-  const qCompact = compactTitle(query);
-  const cCompact = compactTitle(candidate);
-  if (qCompact.length > 5 && cCompact.includes(qCompact)) score += 0.9;
-  if (c.startsWith(q) && q.length > 4) score += 0.4;
-  // A compact hit already proves the title is there, so don't penalise it for
-  // having fewer separate token matches (Kel Pie Rays vs KelpieRays).
-  if (hits < Math.min(2, qTokens.length) && score < 0.9) score *= 0.45;
-  return Math.min(score, 2.5);
 }
 
 const ENGINE_WORDS = /\b(renpy|rpgm|html|unity|godot|unreal|flash|qsp)\b/gi;

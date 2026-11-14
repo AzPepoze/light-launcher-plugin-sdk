@@ -7,8 +7,6 @@ import type { HostClient } from '../runtime/host-client';
 import type { HttpRequestParams, HttpRequestResult } from '../types/methods';
 import { ErrorCode, RpcFailure } from '../types/protocol';
 
-export type HttpResult = HttpRequestResult;
-
 export interface HttpTransport {
   request(params: HttpRequestParams, options?: { signal?: AbortSignal }): Promise<HttpRequestResult>;
 }
@@ -49,14 +47,6 @@ export class HttpError extends RpcFailure {
 
 const BODY_SNIPPET_LENGTH = 200;
 
-export interface ProbeResult {
-  url: string;
-  status: number;
-  /** total bytes, 0 when unknown */
-  size: number;
-  ranges: boolean;
-}
-
 export const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
@@ -70,6 +60,26 @@ const DEFAULT_HEADERS: Record<string, string> = {
 export function hostTransport(host: HostClient): HttpTransport {
   return {
     request: (params, options) => host.http.request(params, options),
+  };
+}
+
+/**
+ * Starts each request at least `minDelayMs` after the previous one. A promise chain keeps
+ * the call order, so concurrent calls wait their turn instead of polling.
+ */
+export function spacedTransport(inner: HttpTransport, options: { minDelayMs: number }): HttpTransport {
+  if (options.minDelayMs <= 0) return inner;
+  let chain = Promise.resolve(0);
+  return {
+    request(params, requestOptions) {
+      const start = chain.then(async (nextStart) => {
+        const wait = nextStart - Date.now();
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+        return Date.now();
+      });
+      chain = start.then((at) => at + options.minDelayMs);
+      return start.then(() => inner.request(params, requestOptions));
+    },
   };
 }
 
@@ -87,7 +97,7 @@ export function fetchTransport(fetchImpl: typeof fetch = fetch): HttpTransport {
         signal: AbortSignal.any(signals),
       });
       const text = res.status === 204 || res.status === 304 ? '' : await res.text();
-      checkStatus(res.status, params.allowStatus ?? [], params.url);
+      checkStatus(res.status, params.url, text, { allowed: params.allowStatus ?? [] });
       return {
         status: res.status,
         url: res.url || params.url,
@@ -99,16 +109,19 @@ export function fetchTransport(fetchImpl: typeof fetch = fetch): HttpTransport {
   };
 }
 
-function checkStatus(status: number, allowed: number[], url: string): void {
-  if (allowed.includes(status)) return;
+function checkStatus(
+  status: number,
+  url: string,
+  body: string,
+  options: { allowed?: number[]; throwOnError?: boolean } = {},
+): void {
+  if (options.allowed?.includes(status)) return;
+  if (options.throwOnError) {
+    if (status === 304 || (status >= 200 && status < 300)) return;
+    throw new HttpError(status, url, body.slice(0, BODY_SNIPPET_LENGTH), `HTTP ${status} from ${url}`);
+  }
   if (status === 429) throw new RpcFailure(ErrorCode.RateLimited, `rate limited: ${url}`);
   if (status >= 500) throw new RpcFailure(ErrorCode.RemoteError, `HTTP ${status}: ${url}`);
-}
-
-function assertSuccess(res: HttpResult, url: string): void {
-  if (res.status === 304 || (res.status >= 200 && res.status < 300)) return;
-  const message = `HTTP ${res.status} from ${url}`;
-  throw new HttpError(res.status, res.url || url, res.text.slice(0, BODY_SNIPPET_LENGTH), message);
 }
 
 function headersToRecord(headers: Headers): Record<string, string> {
@@ -125,7 +138,7 @@ export class HttpClient {
     private readonly options: HttpClientOptions = {},
   ) {}
 
-  async request(url: string, options: HttpOptions = {}): Promise<HttpResult> {
+  async request(url: string, options: HttpOptions = {}): Promise<HttpRequestResult> {
     const { signal, throwOnError, ...params } = options;
     const res = await this.transport.request(
       {
@@ -136,7 +149,7 @@ export class HttpClient {
       },
       { signal },
     );
-    if (throwOnError) assertSuccess(res, url);
+    if (throwOnError) checkStatus(res.status, res.url || url, res.text, { throwOnError: true });
     return res;
   }
 
@@ -152,26 +165,5 @@ export class HttpClient {
     } catch {
       throw new HttpError(res.status, res.url || url, res.text.slice(0, BODY_SNIPPET_LENGTH), `invalid JSON from ${url}`);
     }
-  }
-
-  /** Total size, range support and final url. Tries HEAD first, then a 1-byte ranged GET. */
-  async probe(url: string, headers: Record<string, string> = {}): Promise<ProbeResult> {
-    const head = await this.request(url, { method: 'HEAD', headers, allowStatus: [405] }).catch(() => null);
-    if (head && head.status < 400 && head.headers['content-length']) {
-      return {
-        url: head.url,
-        status: head.status,
-        size: Number(head.headers['content-length']) || 0,
-        ranges: (head.headers['accept-ranges'] ?? '').toLowerCase().includes('bytes'),
-      };
-    }
-    const ranged = await this.request(url, { headers: { ...headers, Range: 'bytes=0-0' } });
-    const total = ranged.headers['content-range']?.match(/\/(\d+)/)?.[1];
-    return {
-      url: ranged.url,
-      status: ranged.status,
-      size: total ? Number(total) : Number(ranged.headers['content-length'] ?? 0) || 0,
-      ranges: ranged.status === 206,
-    };
   }
 }

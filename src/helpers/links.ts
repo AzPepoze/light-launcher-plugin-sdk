@@ -1,6 +1,6 @@
 /** Download link parsing, ported from interesting-launcher core/links.ts. */
 import type { FileKind, Platform } from '../types/game';
-import { absUrl, type Doc } from './html';
+import { absUrl } from './html';
 
 export interface HostRule {
   kind: FileKind;
@@ -144,21 +144,6 @@ function ruleFor(host: string, input: ClassifyInput, binary: boolean): HostRule 
     return { kind: 'attachment' };
   }
   return binary ? { kind: 'external' } : null;
-}
-
-/** Every real download link inside a post body. */
-export function extractLinks(doc: Doc, selector: string, hosts: HostMap, baseUrl: string): LinkInfo[] {
-  const out = new Map<string, LinkInfo>();
-  doc(selector)
-    .find('a[href]')
-    .each((_, el) => {
-      const anchor = doc(el);
-      const href = anchor.attr('href');
-      if (!href) return;
-      const info = classifyLink({ url: href, label: anchor.text(), hosts, baseUrl });
-      if (info && !out.has(info.url)) out.set(info.url, info);
-    });
-  return [...out.values()];
 }
 
 /** Best-guess filename for a mirror whose url is opaque. */

@@ -16,10 +16,11 @@ makes folder names that are safe on Windows and Linux.
 
 ```ts
 import {
+  DOWNLOAD_SETTINGS_DEFAULTS,
   downloadHints,
   downloadSettingsSchemaProperties,
-  type DownloadSettings,
-} from '@light-launcher/plugin-sdk';
+} from '@light-launcher/plugin-sdk/downloads';
+import { parseDownloadSettings, readSettings } from '@light-launcher/plugin-sdk/helpers';
 
 // 1. settings schema: add the four download settings to your own fields
 const properties = {
@@ -27,15 +28,14 @@ const properties = {
   baseUrl: { type: 'string', title: 'Site address', default: 'https://demo.example' },
 };
 
-// 2. prepareDownload: turn the settings into hints
-const settings = (await ctx.host.settings.get()) as DownloadSettings;
+// 2. prepareDownload: read the saved settings and turn them into hints
+const settings = await readSettings(ctx.host, parseDownloadSettings, DOWNLOAD_SETTINGS_DEFAULTS);
 return { url, headers, ...downloadHints(settings, { title: game.title }) };
 ```
 
 > [!TIP]
 > The four settings are in the **Downloads** group of the settings form.
-> The settings the user saved are already filled with defaults, so `downloadHints` always
-> gets a full set of values.
+> `parseDownloadSettings` fills in the defaults, so `downloadHints` always gets a full set of values.
 
 ## The four settings
 

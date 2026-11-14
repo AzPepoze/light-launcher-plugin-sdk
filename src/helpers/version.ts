@@ -19,7 +19,7 @@ function kindOfPrefix(prefix: string): VersionKind {
   return 'v';
 }
 
-export function parseVersion(input?: string | null): ParsedVersion | null {
+function parseVersion(input?: string | null): ParsedVersion | null {
   if (input == null) return null;
   const raw = String(input).trim().replace(/^[[(<{]+|[)\]>}]+$/g, '').trim();
   if (!raw) return null;
@@ -43,18 +43,13 @@ export function parseVersion(input?: string | null): ParsedVersion | null {
   return { raw, kind, nums, suffix };
 }
 
-/** chapter, episode and date labels: different labels never compare by number */
-function isLabelKind(kind: VersionKind): boolean {
-  return kind === 'ch' || kind === 'ep' || kind === 'date';
-}
-
-/** chapter and episode keys keep their label; plain versions share one family */
-function isChapterOrEpisode(kind: VersionKind): boolean {
-  return kind === 'ch' || kind === 'ep';
+/** chapter, episode and date labels never compare by number across families */
+function isLabelKind(kind: VersionKind, includeDate = true): boolean {
+  return kind === 'ch' || kind === 'ep' || (includeDate && kind === 'date');
 }
 
 /** negative = a older, 0 = equal, positive = a newer */
-export function compareVersions(a?: string | null, b?: string | null): number {
+function compareVersions(a?: string | null, b?: string | null): number {
   const pa = parseVersion(a);
   const pb = parseVersion(b);
   if (!pa && !pb) return 0;
@@ -87,7 +82,7 @@ export function versionKey(input?: string | null): string | null {
   if (!parsed) return null;
   const trimmed = parsed.nums.slice();
   while (trimmed.length > 1 && trimmed[trimmed.length - 1] === 0) trimmed.pop();
-  const family = isChapterOrEpisode(parsed.kind) ? parsed.kind : 'v';
+  const family = isLabelKind(parsed.kind, false) ? parsed.kind : 'v';
   return `${family}${trimmed.join('.')}${parsed.suffix}`;
 }
 

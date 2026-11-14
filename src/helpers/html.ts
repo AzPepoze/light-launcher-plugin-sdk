@@ -71,22 +71,6 @@ function useLazySource(node: El, attribs: Record<string, string>, baseUrl: strin
   node.attr('src', absUrl(baseUrl, lazy) ?? lazy);
 }
 
-export function firstText(doc: Doc, ...selectors: string[]): string {
-  for (const selector of selectors) {
-    const value = txt(doc(selector).first());
-    if (value) return value;
-  }
-  return '';
-}
-
-export function firstAttr(doc: Doc, name: string, ...selectors: string[]): string | null {
-  for (const selector of selectors) {
-    const value = attr(doc(selector).first(), name);
-    if (value) return value;
-  }
-  return null;
-}
-
 /** Site chrome, favicons and avatars are never cover art. */
 const IMAGE_SKIP_PATH = /\/(?:styles|emoji|smilies|avatars|assets)\//i;
 const IMAGE_SKIP_EXT = /\.(?:svg|ico)$/i;
@@ -121,16 +105,4 @@ export function parseSize(input?: string | null): number | null {
   const amount = Number(match[1]);
   if (!Number.isFinite(amount)) return null;
   return Math.round(amount * (SIZE_MULTIPLIERS[match[2].toLowerCase()] ?? 1));
-}
-
-export function absoluteImages(doc: Doc, selector: string, baseUrl: string): string[] {
-  const out: string[] = [];
-  doc(selector)
-    .find('img')
-    .each((_, el) => {
-      const img = doc(el);
-      const src = absUrl(baseUrl, img.attr('src') ?? img.attr('data-src'));
-      if (src && !out.includes(src)) out.push(src);
-    });
-  return out;
 }
