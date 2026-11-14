@@ -90,23 +90,29 @@ export function sourceHandlers(provider: SourceProviderSource, sourceId: string)
       if (!target.sync) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${source} has no sync`);
       return target.sync({ signal: ctx.signal, progress: ctx.progress });
     },
-    'source.listGames': (params, ctx) => listGamesOf(forSource(params.source), params, ctx),
-    'source.browse': (params, ctx) => browseOf(forSource(params.source), params, ctx),
-    'source.listFilters': (params, ctx) => listFiltersOf(forSource(params.source), params, ctx),
+    'source.listGames': (params, ctx) => optionalOf(forSource(params.source), 'listGames', params, ctx),
+    'source.browse': (params, ctx) => optionalOf(forSource(params.source), 'browse', params, ctx),
+    'source.listFilters': (params, ctx) => optionalOf(forSource(params.source), 'listFilters', params, ctx),
   };
 }
 
-async function listGamesOf(target: SourceProvider, params: ListGamesParams, hooks: CallHooks): Promise<ListGamesResult> {
-  if (!target.listGames) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${params.source} has no listGames`);
-  return target.listGames(params, { signal: hooks.signal, progress: hooks.progress });
+interface OptionalSourceMethods {
+  listGames: { params: ListGamesParams; result: ListGamesResult };
+  browse: { params: BrowseParams; result: BrowseResult };
+  listFilters: { params: ListFiltersParams; result: ListFiltersResult };
 }
 
-async function browseOf(target: SourceProvider, params: BrowseParams, hooks: CallHooks): Promise<BrowseResult> {
-  if (!target.browse) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${params.source} has no browse`);
-  return target.browse(params, { signal: hooks.signal, progress: hooks.progress });
-}
-
-async function listFiltersOf(target: SourceProvider, params: ListFiltersParams, hooks: CallHooks): Promise<ListFiltersResult> {
-  if (!target.listFilters) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${params.source} has no listFilters`);
-  return target.listFilters(params, { signal: hooks.signal, progress: hooks.progress });
+async function optionalOf<M extends keyof OptionalSourceMethods>(
+  target: SourceProvider,
+  method: M,
+  params: OptionalSourceMethods[M]['params'],
+  hooks: CallHooks,
+): Promise<OptionalSourceMethods[M]['result']> {
+  type Handler = (
+    params: OptionalSourceMethods[M]['params'],
+    hooks: CallHooks,
+  ) => Promise<OptionalSourceMethods[M]['result']>;
+  const handler = target[method] as unknown as Handler | undefined;
+  if (!handler) throw new RpcFailure(ErrorCode.MethodNotFound, `source ${params.source} has no ${method}`);
+  return handler.call(target, params, { signal: hooks.signal, progress: hooks.progress });
 }
