@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { conformanceCommand, currentEntryKey } from '../src/cli/commands/conformance';
 import { initCommand } from '../src/cli/commands/init';
-import { createLogger, type LineSink } from '../src/cli/log';
+import { createLogger, type LineSink } from '../src/runtime/logger';
 
 const SDK_ROOT = path.resolve(import.meta.dir, '..');
 const PLUGIN_ID = 'demo-site';

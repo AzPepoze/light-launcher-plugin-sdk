@@ -5,7 +5,7 @@ import type { Platform, Ref } from '../../types/game';
 import type { PluginManifest } from '../../types/manifest';
 import type { GrantedPermissions, InitializeParams, InitializeResult } from '../../types/methods';
 import { RpcPeer } from '../../runtime/peer';
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 import { readManifest } from '../manifest';
 
 const REQUEST_TIMEOUT_MS = 5000;

@@ -6,7 +6,7 @@ import { keygenCommand } from './commands/keygen';
 import { packCommand } from './commands/pack';
 import { signCommand } from './commands/sign';
 import { validateCommand } from './commands/validate';
-import { createLogger } from './log';
+import { createLogger } from '../runtime/logger';
 
 const USAGE = `llp - Light Launcher plugin tool
 

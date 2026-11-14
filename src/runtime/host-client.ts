@@ -9,6 +9,7 @@ import type {
   PluginMethodName,
   PluginMethods,
 } from '../types/methods';
+import type { LogLevel } from './logger';
 import type { RequestOptions } from './peer';
 
 /** The part of RpcPeer that the host client needs. */
@@ -16,8 +17,6 @@ export interface HostTransport {
   request<R = unknown>(method: string, params?: unknown, options?: RequestOptions): Promise<R>;
   notify(method: string, params?: unknown): void;
 }
-
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface HostClient {
   /** Typed call to any plugin-to-host method. */

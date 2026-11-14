@@ -1,4 +1,4 @@
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 import { readManifest } from '../manifest';
 import { readSettingsSchema } from '../settings';
 

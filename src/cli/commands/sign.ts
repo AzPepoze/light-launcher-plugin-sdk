@@ -2,7 +2,7 @@
 import { createPrivateKey, sign as signBytes, type KeyObject } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 import { readZip, writeZip, type ZipEntry } from '../zip';
 import { CHECKSUM_FILE, checksumLines, sha256Hex } from './pack';
 

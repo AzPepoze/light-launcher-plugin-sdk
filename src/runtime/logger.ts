@@ -1,5 +1,5 @@
 /**
- * CLI logger. Writes to stderr. Colors only when stderr is a TTY and NO_COLOR is unset.
+ * Logger. Writes to stderr. Colors only when stderr is a TTY and NO_COLOR is unset.
  * Each line is one write call, so concurrent writers do not interleave within a line.
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

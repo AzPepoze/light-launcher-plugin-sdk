@@ -8,7 +8,7 @@ import { packCommand } from '../src/cli/commands/pack';
 import { SIGNATURE_FILE, signCommand } from '../src/cli/commands/sign';
 import { validateCommand } from '../src/cli/commands/validate';
 import { main } from '../src/cli/llp';
-import { createLogger, type LineSink } from '../src/cli/log';
+import { createLogger, type LineSink } from '../src/runtime/logger';
 import { readZip, writeZip, type ZipEntry } from '../src/cli/zip';
 import type { PluginManifest } from '../src/types/manifest';
 

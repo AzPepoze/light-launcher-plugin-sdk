@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PluginManifest } from '../../types/manifest';
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 import { MANIFEST_FILE, readManifest } from '../manifest';
 import { writeZip, type ZipEntry } from '../zip';
 

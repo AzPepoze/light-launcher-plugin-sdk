@@ -2,7 +2,7 @@
 import { generateKeyPairSync } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 
 export const PRIVATE_KEY_FILE = 'private.pem';
 /** The launcher reads this file name from its plugins folder. */

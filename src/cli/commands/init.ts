@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Logger } from '../log';
+import type { Logger } from '../../runtime/logger';
 
 export const TEMPLATE_DIR = path.resolve(import.meta.dir, '../../../templates/plugin');
 const ID_PATTERN = /^[a-z][a-z0-9-]{1,39}$/;

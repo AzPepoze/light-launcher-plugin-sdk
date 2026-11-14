@@ -406,11 +406,11 @@ describe('plugin-defined methods', () => {
 });
 
 describe('browser assist correlation', () => {
-  test('ctx.requestId is the inbound id, and browser.assist sends the token and returns headers', async () => {
+  test('ctx.id is the inbound id, and browser.assist sends the token and returns headers', async () => {
     let inboundId: unknown;
     const plugin = startPlugin({
       'source.prepareDownload': async (_params, ctx) => {
-        inboundId = ctx.requestId;
+        inboundId = ctx.id;
         const captured = await ctx.host.browser.assist({ url: 'https://page.test', token: 'job-1' });
         return {
           url: captured.capturedUrl ?? '',
