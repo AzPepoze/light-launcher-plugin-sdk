@@ -159,17 +159,6 @@ describe('source.listGames schema', () => {
     expect(matches('source.listGames', 'result', {})).toBe(false);
   });
 
-  test('the listGames capability is a boolean and may be left out', () => {
-    const capabilities = (extra: object) => ({
-      pluginVersion: '1.0.0',
-      capabilities: {
-        site: { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false, ...extra },
-      },
-    });
-    expect(matches('initialize', 'result', capabilities({}))).toBe(true);
-    expect(matches('initialize', 'result', capabilities({ listGames: true }))).toBe(true);
-    expect(matches('initialize', 'result', capabilities({ listGames: 'yes' }))).toBe(false);
-  });
 });
 
 describe('source.browse schema', () => {
@@ -230,28 +219,24 @@ describe('source.listFilters schema', () => {
   });
 });
 
-describe('invalid_cursor error code', () => {
-  test('is listed with the other Light Launcher codes', () => {
-    expect(protocol.$defs.errorCodes.enum).toContain(-32007);
+describe('optional capability flags', () => {
+  const capabilities = (extra: object) => ({
+    pluginVersion: '1.0.0',
+    capabilities: {
+      site: { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false, ...extra },
+    },
+  });
+
+  test.each(['listGames', 'browse:filters'])('%s is a boolean and may be left out', (key) => {
+    expect(matches('initialize', 'result', capabilities({}))).toBe(true);
+    expect(matches('initialize', 'result', capabilities({ [key]: true }))).toBe(true);
+    expect(matches('initialize', 'result', capabilities({ [key]: 'yes' }))).toBe(false);
   });
 });
 
-describe('auth required error code', () => {
-  test('is listed with the other Light Launcher codes', () => {
-    expect(protocol.$defs.errorCodes.enum).toContain(-32008);
-  });
-});
-
-describe('browse:filters capability', () => {
-  test('is a boolean and may be left out', () => {
-    const capabilities = (extra: object) => ({
-      pluginVersion: '1.0.0',
-      capabilities: {
-        site: { browse: true, auth: 'none', updateCheck: false, resolveFiles: false, versioned: false, ...extra },
-      },
-    });
-    expect(matches('initialize', 'result', capabilities({ 'browse:filters': true }))).toBe(true);
-    expect(matches('initialize', 'result', capabilities({ 'browse:filters': 'yes' }))).toBe(false);
+describe('Light Launcher error codes', () => {
+  test.each([-32007, -32008])('%i is listed with the other codes', (code) => {
+    expect(protocol.$defs.errorCodes.enum).toContain(code);
   });
 });
 
