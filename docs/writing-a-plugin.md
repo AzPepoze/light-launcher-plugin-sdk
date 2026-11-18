@@ -247,6 +247,19 @@ the binaries, the UI files and a `SHA256SUMS` file with a checksum for each file
 > [!WARNING]
 > Unsigned packages show a warning when a user installs them.
 
+### Try it while you build
+
+`llp dev` links the folder in the launcher and runs your build in watch mode. The launcher
+restarts the plugin when its files change. You do not pack or install it again.
+
+| Step | What happens |
+|---|---|
+| Link | Runs `light-launcher plugin dev <dir>`. If the launcher is not on `PATH`, it prints the command |
+| Build | Runs the `build` script from `package.json` with `--watch`. Stop it with Ctrl+C |
+
+> [!NOTE]
+> The build script must accept `--watch`. Without a `build` script, `llp dev` only links the folder.
+
 ## Next
 
 - [Protocol](protocol.md): every message the launcher and plugin send
