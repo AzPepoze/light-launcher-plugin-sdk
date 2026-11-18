@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import path from 'node:path';
 import { conformanceCommand } from './commands/conformance';
+import { devCommand } from './commands/dev';
 import { initCommand } from './commands/init';
 import { keygenCommand } from './commands/keygen';
 import { packCommand } from './commands/pack';
@@ -14,6 +15,7 @@ const USAGE = `llp - Light Launcher plugin tool
   llp validate [dir]             check plugin.json against the schema
   llp pack [dir] [--out <dir>]   build <id>-<version>.llplugin
   llp test [dir]                 run the plugin and check the protocol
+  llp dev [dir]                  link the folder in the launcher and watch its build
   llp keygen [--out <dir>]       create an ed25519 signing key pair
   llp sign <package> --key <pem> [--out <package>]
                                  sign SHA256SUMS and write SIGNATURE
@@ -55,6 +57,8 @@ export async function main(argv: string[], cwd = process.cwd()): Promise<number>
       return packCommand(cwdPath(positional[0]), out ? cwdPath(out) : cwd, createLogger('pack'));
     case 'test':
       return conformanceCommand(cwdPath(positional[0]), createLogger('test'));
+    case 'dev':
+      return devCommand(cwdPath(positional[0]), createLogger('dev'));
     case 'keygen':
       return keygenCommand(cwdPath(out), createLogger('keygen'));
     case 'sign': {
